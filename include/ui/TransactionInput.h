@@ -24,6 +24,9 @@ public:
     // Method to handle income transaction input
     void addIncomeTransaction();
 
+    // Method to handle expense transaction input
+    void addExpenseTransaction();
+
     // Method to display all transactions
     void displayAllTransactions() const;
 

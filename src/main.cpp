@@ -7,8 +7,9 @@
 void displayMenu() {
     std::cout << "===== Budget & Expense Manager =====\n";
     std::cout << "1. Add Income Transaction\n";
-    std::cout << "2. View All Transactions\n";
-    std::cout << "3. View Financial Summary\n";
+    std::cout << "2. Add Expense Transaction\n";
+    std::cout << "3. View All Transactions\n";
+    std::cout << "4. View Financial Summary\n";
     std::cout << "0. Exit\n";
     std::cout << "Choice: ";
 }
@@ -34,9 +35,12 @@ int main() {
             inputHandler.addIncomeTransaction();
             break;
         case 2:
-            inputHandler.displayAllTransactions();
+            inputHandler.addExpenseTransaction();
             break;
         case 3:
+            inputHandler.displayAllTransactions();
+            break;
+        case 4:
             inputHandler.displaySummary();
             break;
         default:

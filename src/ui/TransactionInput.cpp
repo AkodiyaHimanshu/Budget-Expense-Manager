@@ -79,6 +79,35 @@ void TransactionInput::addIncomeTransaction() {
     std::cout << "Transaction details: " << transaction->getDisplayString() << "\n\n";
 }
 
+void TransactionInput::addExpenseTransaction() {
+    // Clear any previous input errors
+    std::cin.clear();
+
+    std::cout << "\n=== Add Expense Transaction ===\n";
+
+    // Get amount
+    double amount = getValidAmount();
+
+    // Get category
+    std::string category = getValidCategory();
+
+    // Use current date for simplicity
+    time_t date = getValidDate();
+
+    // Create and add the transaction
+    auto transaction = std::make_shared<Transaction>(
+        amount,
+        date,
+        category,
+        TransactionType::EXPENSE
+    );
+
+    transactionManager.addTransaction(transaction);
+
+    std::cout << "\nExpense transaction added successfully!\n";
+    std::cout << "Transaction details: " << transaction->getDisplayString() << "\n\n";
+}
+
 void TransactionInput::displayAllTransactions() const {
     const auto& transactions = transactionManager.getAllTransactions();
 

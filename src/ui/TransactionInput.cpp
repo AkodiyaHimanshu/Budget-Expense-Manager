@@ -33,6 +33,9 @@ double TransactionInput::getValidAmount() {
     while (!validInput) {
         std::cout << "Enter amount: $";
 
+        // Clear any newline left in the buffer from previous input
+        if (std::cin.peek() == '\n') std::cin.get();
+
         // Get the entire line of input
         std::getline(std::cin, input);
 
@@ -126,8 +129,14 @@ std::string TransactionInput::getValidCategory() {
 
     while (!validInput) {
         std::cout << "Enter category: ";
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        // Clear any newline left in the buffer from previous input
+        if (std::cin.peek() == '\n') std::cin.get();
+
         std::getline(std::cin, category);
+
+        // Trim leading and trailing whitespace
+        category = trimWhitespace(category);
 
         if (!category.empty()) {
             validInput = true;

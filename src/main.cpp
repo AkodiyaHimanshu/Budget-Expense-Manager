@@ -1,7 +1,6 @@
 ﻿// Budget-Expense-Manager.cpp : Defines the entry point for the application.
-//
 
-#include "Budget-Expense-Manager.h"
+#include "../include/main.h"
 
 using namespace std;
 

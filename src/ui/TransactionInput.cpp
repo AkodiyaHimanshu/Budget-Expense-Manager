@@ -116,11 +116,45 @@ void TransactionInput::displayAllTransactions() const {
         return;
     }
 
-    std::cout << "\n=== All Transactions ===\n";
+    // Column widths for consistent formatting
+    const int idWidth = 4;           // For transaction number
+    const int dateWidth = 20;        // For date
+    const int typeWidth = 10;        // For transaction type
+    const int amountWidth = 15;      // For amount with currency symbol
+    const int categoryWidth = 25;    // For category
+
+    // Table header with separator line
+    std::cout << "\n=== All Transactions ===\n\n";
+
+    // Print header row with column labels
+    std::cout << std::left
+        << std::setw(idWidth) << "ID" << " | "
+        << std::setw(dateWidth) << "Date & Time" << " | "
+        << std::setw(typeWidth) << "Type" << " | "
+        << std::setw(amountWidth) << "Amount" << " | "
+        << std::setw(categoryWidth) << "Category"
+        << std::endl;
+
+    // Print separator line
+    std::string separator(idWidth + dateWidth + typeWidth + amountWidth + categoryWidth + 12, '-');
+    std::cout << separator << std::endl;
+
+    // Print each transaction in tabular format
     for (size_t i = 0; i < transactions.size(); ++i) {
-        std::cout << (i + 1) << ". " << transactions[i]->getDisplayString() << "\n";
+        const auto& transaction = transactions[i];
+
+        std::cout << std::left
+            << std::setw(idWidth) << (i + 1) << " | "
+            << std::setw(dateWidth) << transaction->getFormattedDate() << " | "
+            << std::setw(typeWidth) << transaction->getTypeAsString() << " | "
+            << std::setw(amountWidth) << transaction->getFormattedAmount() << " | "
+            << std::setw(categoryWidth) << transaction->getCategory()
+            << std::endl;
     }
-    std::cout << std::endl;
+
+    // Print footer separator
+    std::cout << separator << std::endl;
+    std::cout << "\nTotal Entries: " << transactions.size() << std::endl << std::endl;
 }
 
 void TransactionInput::displaySummary() const {

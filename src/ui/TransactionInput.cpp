@@ -162,8 +162,67 @@ void TransactionInput::displaySummary() const {
     double totalExpense = transactionManager.calculateTotal(TransactionType::EXPENSE);
     double balance = totalIncome - totalExpense;
 
-    std::cout << "\n=== Financial Summary ===\n";
-    std::cout << "Total Income: $" << std::fixed << std::setprecision(2) << totalIncome << "\n";
-    std::cout << "Total Expenses: $" << std::fixed << std::setprecision(2) << totalExpense << "\n";
-    std::cout << "Current Balance: $" << std::fixed << std::setprecision(2) << balance << "\n\n";
+    // Get count of each type of transaction
+    size_t incomeCount = transactionManager.getTransactionsByType(TransactionType::INCOME).size();
+    size_t expenseCount = transactionManager.getTransactionsByType(TransactionType::EXPENSE).size();
+
+    // Column widths for consistent formatting
+    const int categoryWidth = 20;      // For financial category
+    const int countWidth = 15;         // For transaction count
+    const int amountWidth = 20;        // For monetary values
+
+    // Table header with separator line
+    std::cout << "\n=== Financial Summary ===\n\n";
+
+    // Print header row with column labels
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Category" << " | "
+        << std::setw(countWidth) << "Transactions" << " | "
+        << std::setw(amountWidth) << "Amount"
+        << std::endl;
+
+    // Print separator line
+    std::string separator(categoryWidth + countWidth + amountWidth + 6, '-');
+    std::cout << separator << std::endl;
+
+    // Format financial figures with currency symbol and 2 decimal places
+    std::stringstream incomeStr, expenseStr, balanceStr;
+
+    incomeStr << "$" << std::fixed << std::setprecision(2) << totalIncome;
+    expenseStr << "$" << std::fixed << std::setprecision(2) << totalExpense;
+
+    // Format balance with a sign to indicate positive/negative
+    if (balance >= 0) {
+        balanceStr << "+$" << std::fixed << std::setprecision(2) << balance;
+    }
+    else {
+        balanceStr << "-$" << std::fixed << std::setprecision(2) << std::abs(balance);
+    }
+
+    // Print Income row
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Total Income" << " | "
+        << std::setw(countWidth) << incomeCount << " | "
+        << std::setw(amountWidth) << incomeStr.str()
+        << std::endl;
+
+    // Print Expense row
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Total Expenses" << " | "
+        << std::setw(countWidth) << expenseCount << " | "
+        << std::setw(amountWidth) << expenseStr.str()
+        << std::endl;
+
+    // Print separator before balance
+    std::cout << separator << std::endl;
+
+    // Print Balance row
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Current Balance" << " | "
+        << std::setw(countWidth) << (incomeCount + expenseCount) << " | "
+        << std::setw(amountWidth) << balanceStr.str()
+        << std::endl;
+
+    // Print footer separator
+    std::cout << separator << std::endl << std::endl;
 }

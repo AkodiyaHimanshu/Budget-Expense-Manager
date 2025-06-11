@@ -58,6 +58,9 @@ double TransactionInput::getValidAmount() {
             if (!input.empty() && input[0] == '+') {
                 startIndex = 1;
             }
+            else if (!input.empty() && input[0] == '-') {
+                throw std::invalid_argument("Negative amounts are not allowed. Please enter a positive number.");
+            }
 
             // Validate the rest of the string
             for (size_t i = startIndex; i < input.length(); ++i) {
@@ -97,11 +100,6 @@ double TransactionInput::getValidAmount() {
             // Check for zero
             if (amount == 0) {
                 throw std::invalid_argument("Amount cannot be zero.");
-            }
-
-            // Check for negative values
-            if (amount < 0) {
-                throw std::invalid_argument("Amount cannot be negative. Please enter a positive number.");
             }
 
             validInput = true;

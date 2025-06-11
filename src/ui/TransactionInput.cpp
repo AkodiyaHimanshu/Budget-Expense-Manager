@@ -9,16 +9,81 @@ TransactionInput::TransactionInput(TransactionManager& manager) : transactionMan
 double TransactionInput::getValidAmount() {
     double amount;
     bool validInput = false;
+    std::string input;
 
     while (!validInput) {
         std::cout << "Enter amount: $";
-        if (std::cin >> amount && amount > 0) {
+        std::cin >> input;
+
+        // Clear any existing errors
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        try {
+            // Check for empty input
+            if (input.empty()) {
+                throw std::invalid_argument("Amount cannot be empty.");
+            }
+
+            // Check if the input contains only digits, a decimal point, and optionally a leading +
+            bool validFormat = true;
+            bool hasDecimal = false;
+
+            for (size_t i = 0; i < input.length(); ++i) {
+                char c = input[i];
+
+                // Allow + only at the beginning
+                if (c == '+' && i == 0) {
+                    continue;
+                }
+
+                // Allow only one decimal point
+                if (c == '.') {
+                    if (hasDecimal) {
+                        validFormat = false;
+                        break;
+                    }
+                    hasDecimal = true;
+                    continue;
+                }
+
+                // Must be a digit
+                if (!std::isdigit(c)) {
+                    validFormat = false;
+                    break;
+                }
+            }
+
+            if (!validFormat) {
+                throw std::invalid_argument("Amount must contain only digits and at most one decimal point.");
+            }
+
+            // Convert to double
+            amount = std::stod(input);
+
+            // Check for zero
+            if (amount == 0) {
+                throw std::invalid_argument("Amount cannot be zero.");
+            }
+
+            // Check for negative values
+            if (amount < 0) {
+                throw std::invalid_argument("Amount cannot be negative. Please enter a positive number.");
+            }
+
             validInput = true;
         }
-        else {
-            std::cout << "Invalid amount. Please enter a positive number.\n";
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        catch (const std::invalid_argument& e) {
+            std::cout << "Error: " << e.what() << std::endl;
+            std::cout << "Please try again." << std::endl;
+        }
+        catch (const std::out_of_range& e) {
+            std::cout << "Error: The number is too large." << std::endl;
+            std::cout << "Please enter a smaller amount." << std::endl;
+        }
+        catch (...) {
+            std::cout << "Error: Invalid input format." << std::endl;
+            std::cout << "Please enter a valid positive number (e.g., 123.45)." << std::endl;
         }
     }
 

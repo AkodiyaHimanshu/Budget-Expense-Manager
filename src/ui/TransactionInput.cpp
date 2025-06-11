@@ -6,6 +6,25 @@
 
 TransactionInput::TransactionInput(TransactionManager& manager) : transactionManager(manager) {}
 
+// Helper function to trim leading and trailing whitespace
+std::string trimWhitespace(const std::string& str) {
+    const std::string whitespace = " \t\n\r\f\v";
+
+    // Find the first non-whitespace character
+    size_t start = str.find_first_not_of(whitespace);
+
+    // If the string is all whitespace, return empty string
+    if (start == std::string::npos) {
+        return "";
+    }
+
+    // Find the last non-whitespace character
+    size_t end = str.find_last_not_of(whitespace);
+
+    // Return the trimmed substring
+    return str.substr(start, end - start + 1);
+}
+
 double TransactionInput::getValidAmount() {
     double amount;
     bool validInput = false;
@@ -13,11 +32,12 @@ double TransactionInput::getValidAmount() {
 
     while (!validInput) {
         std::cout << "Enter amount: $";
-        std::cin >> input;
 
-        // Clear any existing errors
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        // Get the entire line of input
+        std::getline(std::cin, input);
+
+        // Trim leading and trailing whitespace
+        input = trimWhitespace(input);
 
         try {
             // Check for empty input
@@ -28,14 +48,17 @@ double TransactionInput::getValidAmount() {
             // Check if the input contains only digits, a decimal point, and optionally a leading +
             bool validFormat = true;
             bool hasDecimal = false;
+            bool hasDigits = false;
+            size_t startIndex = 0;
 
-            for (size_t i = 0; i < input.length(); ++i) {
+            // Check for leading + sign and skip it for validation
+            if (!input.empty() && input[0] == '+') {
+                startIndex = 1;
+            }
+
+            // Validate the rest of the string
+            for (size_t i = startIndex; i < input.length(); ++i) {
                 char c = input[i];
-
-                // Allow + only at the beginning
-                if (c == '+' && i == 0) {
-                    continue;
-                }
 
                 // Allow only one decimal point
                 if (c == '.') {
@@ -52,6 +75,13 @@ double TransactionInput::getValidAmount() {
                     validFormat = false;
                     break;
                 }
+
+                hasDigits = true;
+            }
+
+            // Check if we actually found any digits
+            if (!hasDigits) {
+                throw std::invalid_argument("Amount must contain at least one digit.");
             }
 
             if (!validFormat) {

@@ -12,7 +12,7 @@ endif()
 project ("Budget-Expense-Manager")
 
 # Add source to this project's executable.
-add_executable (Budget-Expense-Manager "src/main.cpp" "include/main.h")
+add_executable (Budget-Expense-Manager "src/main.cpp" "include/main.h" "include/models/Transaction.h" "src/models/Transaction.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Budget-Expense-Manager PROPERTY CXX_STANDARD 20)

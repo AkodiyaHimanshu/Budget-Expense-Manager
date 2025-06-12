@@ -511,17 +511,13 @@ void TransactionInput::displayTransactionsByCategory() const {
 // Method to display transactions filtered by type (income/expense)
 void TransactionInput::displayTransactionsByType() const {
     std::cout << "\n=== Filter Transactions by Type ===\n\n";
-    std::cout << "Available Types:\n";
-    std::cout << "1. Income\n";
-    std::cout << "2. Expense\n";
-    std::cout << "0. Cancel\n";
 
     // Get user selection with robust exception handling
     int choice = -1;
     bool validInput = false;
 
     do {
-        std::cout << "\nSelect type (0-2): ";
+        std::cout << "Enter the type of transactions you want to view (1 = Income, 2 = Expense, 0 = Cancel): ";
 
         // Get input as string first
         std::string input;

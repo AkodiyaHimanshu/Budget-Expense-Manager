@@ -49,6 +49,7 @@ int main() {
             inputHandler.displaySummary();
             break;
         case 5:
+        {
             // Category management submenu
             int categoryChoice = -1;
             while (categoryChoice != 0) {
@@ -76,6 +77,7 @@ int main() {
                 }
             }
             break;
+        }
         default:
             std::cout << "Invalid choice. Please try again.\n";
             // Clear input buffer

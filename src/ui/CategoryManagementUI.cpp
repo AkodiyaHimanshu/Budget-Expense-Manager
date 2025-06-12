@@ -103,8 +103,9 @@ void CategoryManagementUI::addNewCategory() {
     std::string typeName = (type == TransactionType::INCOME) ? "Income" : "Expense";
     std::string categoryName;
 
+    // The getTransactionTypeChoice() method already has cin.ignore() after reading the choice
+    // So we don't need another cin.ignore() here that might consume legitimate input
     std::cout << "\nEnter new " << typeName << " category name (3-25 chars, letters, numbers, spaces, &-_.()): ";
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::getline(std::cin, categoryName);
 
     if (!isValidCategoryName(categoryName)) {

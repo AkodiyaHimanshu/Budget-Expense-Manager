@@ -7,16 +7,25 @@
 #include "../include/ui/CategoryManagementUI.h"
 
 void displayMenu() {
-    std::cout << "===== Budget & Expense Manager =====\n";
-    std::cout << "1. Add Income Transaction\n";
-    std::cout << "2. Add Expense Transaction\n";
-    std::cout << "3. View All Transactions\n";
-    std::cout << "4. View Transactions by Category\n";
-    std::cout << "5. View Transactions by Type (Income/Expense)\n";
-    std::cout << "6. View Financial Summary\n";
-    std::cout << "7. Manage Categories\n";
-    std::cout << "0. Exit\n";
-    std::cout << "Choice: ";
+    std::cout << "\n===== Budget & Expense Manager =====\n";
+    std::cout << "What would you like to do?\n\n";
+    std::cout << "1. Record New Income\n";
+    std::cout << "2. Record New Expense\n";
+    std::cout << "3. View Transactions\n";
+    std::cout << "4. View Financial Summary\n";
+    std::cout << "5. Manage Categories\n";
+    std::cout << "0. Exit Application\n\n";
+    std::cout << "Please enter your choice (0-5): ";
+}
+
+void displayTransactionsMenu() {
+    std::cout << "\n----- View Transactions -----\n";
+    std::cout << "How would you like to view your transactions?\n\n";
+    std::cout << "1. View All Transactions\n";
+    std::cout << "2. Filter by Category\n";
+    std::cout << "3. Filter by Type (Income/Expense)\n";
+    std::cout << "0. Return to Main Menu\n\n";
+    std::cout << "Please enter your choice (0-3): ";
 }
 
 int main() {
@@ -67,18 +76,57 @@ int main() {
             inputHandler.addExpenseTransaction();
             break;
         case 3:
-            inputHandler.displayAllTransactions();
+        {
+            // Transactions submenu
+            int transactionChoice = -1;
+            while (transactionChoice != 0) {
+                displayTransactionsMenu();
+
+                // Improved input handling for transactions menu
+                std::string input;
+                std::getline(std::cin, input);
+
+                // Handle empty input
+                if (input.empty()) {
+                    std::cout << "Please select how you'd like to view your transactions.\n";
+                    continue;
+                }
+
+                try {
+                    // Try to convert input to integer
+                    transactionChoice = std::stoi(input);
+
+                    // Process user's choice
+                    switch (transactionChoice) {
+                    case 0:
+                        std::cout << "Returning to main menu...\n";
+                        break;
+                    case 1:
+                        inputHandler.displayAllTransactions();
+                        break;
+                    case 2:
+                        inputHandler.displayTransactionsByCategory();
+                        break;
+                    case 3:
+                        inputHandler.displayTransactionsByType();
+                        break;
+                    default:
+                        std::cout << "Sorry, that's not a valid option. Please enter a number between 0 and 3.\n";
+                    }
+                }
+                catch (const std::invalid_argument&) {
+                    std::cout << "Sorry, '" << input << "' isn't a valid option. Please choose from the available options.\n";
+                }
+                catch (const std::out_of_range&) {
+                    std::cout << "That number is too large. Please enter a number between 0 and 3.\n";
+                }
+            }
             break;
+        }
         case 4:
-            inputHandler.displayTransactionsByCategory();
-            break;
-        case 5:
-            inputHandler.displayTransactionsByType();
-            break;
-        case 6:
             inputHandler.displaySummary();
             break;
-        case 7:
+        case 5:
         {
             // Category management submenu
             int categoryChoice = -1;

@@ -38,6 +38,9 @@ public:
     // Method to display transactions filtered by category
     void displayTransactionsByCategory() const;
 
+    // Method to display transactions filtered by type (income/expense)
+    void displayTransactionsByType() const;
+
     // Method to display financial summary
     void displaySummary() const;
 };

@@ -507,3 +507,134 @@ void TransactionInput::displayTransactionsByCategory() const {
 
     std::cout << "Net Category Impact: " << netStr.str() << "\n\n";
 }
+
+// Method to display transactions filtered by type (income/expense)
+void TransactionInput::displayTransactionsByType() const {
+    std::cout << "\n=== Filter Transactions by Type ===\n\n";
+    std::cout << "Available Types:\n";
+    std::cout << "1. Income\n";
+    std::cout << "2. Expense\n";
+    std::cout << "0. Cancel\n";
+
+    // Get user selection with robust exception handling
+    int choice = -1;
+    bool validInput = false;
+
+    do {
+        std::cout << "\nSelect type (0-2): ";
+
+        // Get input as string first
+        std::string input;
+        std::getline(std::cin, input);
+
+        // Handle empty input
+        if (input.empty()) {
+            std::cout << "Error: Please enter a choice from the menu.\n";
+            continue;
+        }
+
+        try {
+            // Try to convert input to integer with exception handling
+            choice = std::stoi(input);
+
+            // Check if the choice is within valid range
+            if (choice >= 0 && choice <= 2) {
+                validInput = true;
+            }
+            else {
+                std::cout << "Error: Please enter a number between 0 and 2.\n";
+            }
+        }
+        catch (const std::invalid_argument&) {
+            std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
+        }
+        catch (const std::out_of_range&) {
+            std::cout << "Error: The number you entered is too large. Please try again.\n";
+        }
+
+    } while (!validInput);
+
+    // Cancel if user chose 0
+    if (choice == 0) {
+        std::cout << "Operation cancelled.\n";
+        return;
+    }
+
+    // Determine the type based on user choice
+    TransactionType selectedType = (choice == 1) ? TransactionType::INCOME : TransactionType::EXPENSE;
+    std::string typeName = (choice == 1) ? "Income" : "Expense";
+
+    // Get transactions for the selected type
+    std::vector<std::shared_ptr<Transaction>> filteredTransactions =
+        transactionManager.getTransactionsByType(selectedType);
+
+    // Display the filtered transactions
+    displayTransactionsTabular(filteredTransactions, typeName + " Transactions");
+
+    // If no transactions, return
+    if (filteredTransactions.empty()) {
+        return;
+    }
+
+    // Calculate and display type-specific statistics
+    double total = 0.0;
+    std::map<std::string, double> categoryTotals;
+    std::map<std::string, int> categoryCounts;
+
+    for (const auto& transaction : filteredTransactions) {
+        std::string category = transaction->getCategory();
+        double amount = transaction->getAmount();
+
+        total += amount;
+        categoryTotals[category] += amount;
+        categoryCounts[category]++;
+    }
+
+    // Display detailed breakdown by category
+    std::cout << "=== " << typeName << " Breakdown by Category ===\n\n";
+
+    // Define column widths for consistent formatting
+    const int categoryWidth = 25;
+    const int countWidth = 15;
+    const int amountWidth = 15;
+    const int percentWidth = 15;
+
+    // Print header row
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Category" << " | "
+        << std::setw(countWidth) << "Count" << " | "
+        << std::setw(amountWidth) << "Amount" << " | "
+        << std::setw(percentWidth) << "Percentage"
+        << std::endl;
+
+    // Print separator line
+    std::string separator(categoryWidth + countWidth + amountWidth + percentWidth + 9, '-');
+    std::cout << separator << std::endl;
+
+    // Print each category
+    for (const auto& [category, amount] : categoryTotals) {
+        int count = categoryCounts[category];
+        double percentage = (total > 0) ? (amount / total * 100.0) : 0.0;
+
+        std::cout << std::left
+            << std::setw(categoryWidth) << category << " | "
+            << std::setw(countWidth) << count << " | "
+            << std::setw(amountWidth) << "$" << std::fixed << std::setprecision(2) << amount << " | "
+            << std::setw(percentWidth) << std::fixed << std::setprecision(1) << percentage << "%"
+            << std::endl;
+    }
+
+    // Print separator line
+    std::cout << separator << std::endl;
+
+    // Print total row
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Total" << " | "
+        << std::setw(countWidth) << filteredTransactions.size() << " | "
+        << std::setw(amountWidth) << "$" << std::fixed << std::setprecision(2) << total << " | "
+        << std::setw(percentWidth) << "100.0%"
+        << std::endl;
+
+    // Print separator line
+    std::cout << separator << std::endl << std::endl;
+}

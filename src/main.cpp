@@ -31,7 +31,18 @@ int main() {
 
     while (choice != 0) {
         displayMenu();
-        std::cin >> choice;
+
+        // Improved input handling for main menu
+        if (!(std::cin >> choice)) {
+            // Handle non-integer input
+            std::cout << "Error: Please enter a valid number.\n";
+            std::cin.clear(); // Clear the error state
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            continue;
+        }
+
+        // Clear any remaining input in the buffer
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         switch (choice) {
         case 0:
@@ -58,7 +69,18 @@ int main() {
             int categoryChoice = -1;
             while (categoryChoice != 0) {
                 categoryUI.displayCategoryMenu();
-                std::cin >> categoryChoice;
+
+                // Improved input handling for category menu
+                if (!(std::cin >> categoryChoice)) {
+                    // Handle non-integer input
+                    std::cout << "Error: Please enter a valid number.\n";
+                    std::cin.clear(); // Clear the error state
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                    continue;
+                }
+
+                // Clear any remaining input in the buffer
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
                 switch (categoryChoice) {
                 case 0:

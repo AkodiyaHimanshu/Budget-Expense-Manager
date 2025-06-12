@@ -418,70 +418,82 @@ void TransactionInput::displayTransactionsByCategory() const {
         std::cout << (i + 1) << ". " << allCategories[i] << "\n";
     }
 
-    // Get user selection
+    // Get user selection with improved error handling
     int choice;
-    std::cout << "\nSelect category (1-" << allCategories.size() << ", 0 to cancel): ";
+    bool validInput = false;
 
-    if (std::cin >> choice && choice >= 0 && choice <= static_cast<int>(allCategories.size())) {
-        // Clear input buffer
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    do {
+        std::cout << "\nSelect category (1-" << allCategories.size() << ", 0 to cancel): ";
 
-        // Cancel if user chose 0
-        if (choice == 0) {
-            std::cout << "Operation cancelled.\n";
-            return;
-        }
-
-        // Get the selected category
-        std::string selectedCategory = allCategories[choice - 1];
-
-        // Get transactions for the selected category
-        std::vector<std::shared_ptr<Transaction>> filteredTransactions =
-            transactionManager.getTransactionsByCategory(selectedCategory);
-
-        // Display the filtered transactions
-        displayTransactionsTabular(filteredTransactions, "Transactions in Category: " + selectedCategory);
-
-        // Calculate and display category-specific statistics
-        double categoryTotal = 0.0;
-        int incomeCount = 0, expenseCount = 0;
-        double incomeTotal = 0.0, expenseTotal = 0.0;
-
-        for (const auto& transaction : filteredTransactions) {
-            if (transaction->getType() == TransactionType::INCOME) {
-                incomeCount++;
-                incomeTotal += transaction->getAmount();
-                categoryTotal += transaction->getAmount();
+        // Try to read an integer
+        if (std::cin >> choice) {
+            // Integer read successfully, check if it's in range
+            if (choice >= 0 && choice <= static_cast<int>(allCategories.size())) {
+                validInput = true;
             }
             else {
-                expenseCount++;
-                expenseTotal += transaction->getAmount();
-                categoryTotal -= transaction->getAmount();
+                std::cout << "Error: Please enter a number between 0 and " << allCategories.size() << ".\n";
             }
         }
+        else {
+            // Input was not an integer
+            std::cout << "Error: Please enter a valid number.\n";
+            std::cin.clear(); // Clear the error state
+        }
 
-        // Display category statistics
-        std::cout << "=== Category Statistics: " << selectedCategory << " ===\n\n";
-        std::cout << "Income Transactions: " << incomeCount
-            << " ($" << std::fixed << std::setprecision(2) << incomeTotal << ")\n";
-        std::cout << "Expense Transactions: " << expenseCount
-            << " ($" << std::fixed << std::setprecision(2) << expenseTotal << ")\n";
+        // Clear any remaining input in the buffer
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        std::stringstream netStr;
-        if (categoryTotal >= 0) {
-            netStr << "+$" << std::fixed << std::setprecision(2) << categoryTotal;
+    } while (!validInput);
+
+    // Cancel if user chose 0
+    if (choice == 0) {
+        std::cout << "Operation cancelled.\n";
+        return;
+    }
+
+    // Get the selected category
+    std::string selectedCategory = allCategories[choice - 1];
+
+    // Get transactions for the selected category
+    std::vector<std::shared_ptr<Transaction>> filteredTransactions =
+        transactionManager.getTransactionsByCategory(selectedCategory);
+
+    // Display the filtered transactions
+    displayTransactionsTabular(filteredTransactions, "Transactions in Category: " + selectedCategory);
+
+    // Calculate and display category-specific statistics
+    double categoryTotal = 0.0;
+    int incomeCount = 0, expenseCount = 0;
+    double incomeTotal = 0.0, expenseTotal = 0.0;
+
+    for (const auto& transaction : filteredTransactions) {
+        if (transaction->getType() == TransactionType::INCOME) {
+            incomeCount++;
+            incomeTotal += transaction->getAmount();
+            categoryTotal += transaction->getAmount();
         }
         else {
-            netStr << "-$" << std::fixed << std::setprecision(2) << std::abs(categoryTotal);
+            expenseCount++;
+            expenseTotal += transaction->getAmount();
+            categoryTotal -= transaction->getAmount();
         }
+    }
 
-        std::cout << "Net Category Impact: " << netStr.str() << "\n\n";
+    // Display category statistics
+    std::cout << "=== Category Statistics: " << selectedCategory << " ===\n\n";
+    std::cout << "Income Transactions: " << incomeCount
+        << " ($" << std::fixed << std::setprecision(2) << incomeTotal << ")\n";
+    std::cout << "Expense Transactions: " << expenseCount
+        << " ($" << std::fixed << std::setprecision(2) << expenseTotal << ")\n";
 
+    std::stringstream netStr;
+    if (categoryTotal >= 0) {
+        netStr << "+$" << std::fixed << std::setprecision(2) << categoryTotal;
     }
     else {
-        // Invalid input, clear buffer
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Invalid selection.\n";
+        netStr << "-$" << std::fixed << std::setprecision(2) << std::abs(categoryTotal);
     }
+
+    std::cout << "Net Category Impact: " << netStr.str() << "\n\n";
 }

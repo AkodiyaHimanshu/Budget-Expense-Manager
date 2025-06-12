@@ -11,8 +11,9 @@ void displayMenu() {
     std::cout << "1. Add Income Transaction\n";
     std::cout << "2. Add Expense Transaction\n";
     std::cout << "3. View All Transactions\n";
-    std::cout << "4. View Financial Summary\n";
-    std::cout << "5. Manage Categories\n";
+    std::cout << "4. View Transactions by Category\n";
+    std::cout << "5. View Financial Summary\n";
+    std::cout << "6. Manage Categories\n";
     std::cout << "0. Exit\n";
     std::cout << "Choice: ";
 }
@@ -46,9 +47,12 @@ int main() {
             inputHandler.displayAllTransactions();
             break;
         case 4:
-            inputHandler.displaySummary();
+            inputHandler.displayTransactionsByCategory();
             break;
         case 5:
+            inputHandler.displaySummary();
+            break;
+        case 6:
         {
             // Category management submenu
             int categoryChoice = -1;

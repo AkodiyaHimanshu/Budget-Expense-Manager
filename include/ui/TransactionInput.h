@@ -19,6 +19,9 @@ private:
     std::string getValidCategory(TransactionType type);
     time_t getValidDate(); // For simplicity, we'll use current date in implementation
 
+    // Helper method to display transactions in a tabular format
+    void displayTransactionsTabular(const std::vector<std::shared_ptr<Transaction>>& transactions, const std::string& title) const;
+
 public:
     // Constructor
     TransactionInput(TransactionManager& tManager, CategoryManager& cManager);
@@ -32,7 +35,10 @@ public:
     // Method to display all transactions
     void displayAllTransactions() const;
 
-    // Method to display summary
+    // Method to display transactions filtered by category
+    void displayTransactionsByCategory() const;
+
+    // Method to display financial summary
     void displaySummary() const;
 };
 

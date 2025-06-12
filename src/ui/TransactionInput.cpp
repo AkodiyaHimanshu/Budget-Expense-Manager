@@ -418,16 +418,28 @@ void TransactionInput::displayTransactionsByCategory() const {
         std::cout << (i + 1) << ". " << allCategories[i] << "\n";
     }
 
-    // Get user selection with improved error handling
-    int choice;
+    // Get user selection with robust exception handling
+    int choice = -1;
     bool validInput = false;
 
     do {
         std::cout << "\nSelect category (1-" << allCategories.size() << ", 0 to cancel): ";
 
-        // Try to read an integer
-        if (std::cin >> choice) {
-            // Integer read successfully, check if it's in range
+        // Get input as string first
+        std::string input;
+        std::getline(std::cin, input);
+
+        // Handle empty input
+        if (input.empty()) {
+            std::cout << "Error: Please enter a choice from the categories.\n";
+            continue;
+        }
+
+        try {
+            // Try to convert input to integer with exception handling
+            choice = std::stoi(input);
+
+            // Check if the choice is within valid range
             if (choice >= 0 && choice <= static_cast<int>(allCategories.size())) {
                 validInput = true;
             }
@@ -435,14 +447,12 @@ void TransactionInput::displayTransactionsByCategory() const {
                 std::cout << "Error: Please enter a number between 0 and " << allCategories.size() << ".\n";
             }
         }
-        else {
-            // Input was not an integer
-            std::cout << "Error: Please enter a valid number.\n";
-            std::cin.clear(); // Clear the error state
+        catch (const std::invalid_argument&) {
+            std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
         }
-
-        // Clear any remaining input in the buffer
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        catch (const std::out_of_range&) {
+            std::cout << "Error: The number you entered is too large. Please try again.\n";
+        }
 
     } while (!validInput);
 

@@ -32,17 +32,28 @@ int main() {
     while (choice != 0) {
         displayMenu();
 
-        // Improved input handling for main menu
-        if (!(std::cin >> choice)) {
-            // Handle non-integer input
-            std::cout << "Error: Please enter a valid number.\n";
-            std::cin.clear(); // Clear the error state
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        // Improved input handling for main menu using getline and exception handling
+        std::string input;
+        std::getline(std::cin, input);
+
+        // Handle empty input
+        if (input.empty()) {
+            std::cout << "Error: Please enter a choice from the menu.\n";
             continue;
         }
 
-        // Clear any remaining input in the buffer
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        try {
+            // Try to convert input to integer
+            choice = std::stoi(input);
+        }
+        catch (const std::invalid_argument&) {
+            std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
+            continue;
+        }
+        catch (const std::out_of_range&) {
+            std::cout << "Error: The number you entered is too large. Please try again.\n";
+            continue;
+        }
 
         switch (choice) {
         case 0:
@@ -70,17 +81,28 @@ int main() {
             while (categoryChoice != 0) {
                 categoryUI.displayCategoryMenu();
 
-                // Improved input handling for category menu
-                if (!(std::cin >> categoryChoice)) {
-                    // Handle non-integer input
-                    std::cout << "Error: Please enter a valid number.\n";
-                    std::cin.clear(); // Clear the error state
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                // Improved input handling for category menu using getline and exception handling
+                std::string input;
+                std::getline(std::cin, input);
+
+                // Handle empty input
+                if (input.empty()) {
+                    std::cout << "Error: Please enter a choice from the menu.\n";
                     continue;
                 }
 
-                // Clear any remaining input in the buffer
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                try {
+                    // Try to convert input to integer
+                    categoryChoice = std::stoi(input);
+                }
+                catch (const std::invalid_argument&) {
+                    std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
+                    continue;
+                }
+                catch (const std::out_of_range&) {
+                    std::cout << "Error: The number you entered is too large. Please try again.\n";
+                    continue;
+                }
 
                 switch (categoryChoice) {
                 case 0:

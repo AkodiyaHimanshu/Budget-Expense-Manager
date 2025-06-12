@@ -4,7 +4,80 @@
 #include <ctime>
 #include <iomanip>
 
-TransactionInput::TransactionInput(TransactionManager& manager) : transactionManager(manager) {}
+// Constructor with CategoryManager
+TransactionInput::TransactionInput(TransactionManager& tManager, CategoryManager& cManager)
+    : transactionManager(tManager), categoryManager(cManager) {
+}
+
+// Get valid category using CategoryManager
+std::string TransactionInput::getValidCategory(TransactionType type) {
+    std::vector<std::string> categories = categoryManager.getAllCategories(type);
+    std::string typeName = (type == TransactionType::INCOME) ? "Income" : "Expense";
+
+    if (categories.empty()) {
+        std::cout << "No " << typeName << " categories found. Using 'Other' as default.\n";
+        return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+    }
+
+    // Display all available categories
+    std::cout << "\nAvailable " << typeName << " Categories:\n";
+    for (size_t i = 0; i < categories.size(); ++i) {
+        std::cout << (i + 1) << ". " << categories[i] << "\n";
+    }
+
+    // Option to add custom category
+    std::cout << (categories.size() + 1) << ". Add Custom Category\n\n";
+
+    // Get user selection
+    int choice;
+    std::cout << "Select category (1-" << (categories.size() + 1) << "): ";
+
+    if (std::cin >> choice && choice >= 1 && choice <= static_cast<int>(categories.size() + 1)) {
+        // Clear input buffer
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        // Handle "Add Custom Category" option
+        if (choice == static_cast<int>(categories.size() + 1)) {
+            std::string customCategory;
+            std::cout << "Enter new category name (3-25 chars, letters, numbers, spaces, &-_.()): ";
+            std::getline(std::cin, customCategory);
+
+            // Using same validation as in CategoryManagementUI
+            std::regex pattern("^[a-zA-Z0-9 &\\-_\\.\\(\\)]{3,25}$");
+            if (std::regex_match(customCategory, pattern)) {
+                if (!categoryManager.categoryExists(customCategory, type)) {
+                    if (categoryManager.addCategory(customCategory, type)) {
+                        std::cout << "Added new category: " << customCategory << "\n";
+                        return customCategory;
+                    }
+                    else {
+                        std::cout << "Failed to add custom category. Using 'Other' instead.\n";
+                        return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+                    }
+                }
+                else {
+                    std::cout << "Category already exists. Using '" << customCategory << "'.\n";
+                    return customCategory;
+                }
+            }
+            else {
+                std::cout << "Invalid category name. Using 'Other' instead.\n";
+                return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+            }
+        }
+        else {
+            // Return the selected category
+            return categories[choice - 1];
+        }
+    }
+    else {
+        // Invalid input, clear buffer and use default
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Invalid selection. Using 'Other' as default.\n";
+        return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+    }
+}
 
 // Helper function to trim leading and trailing whitespace
 std::string trimWhitespace(const std::string& str) {
@@ -121,93 +194,53 @@ double TransactionInput::getValidAmount() {
     return amount;
 }
 
-std::string TransactionInput::getValidCategory() {
-    std::string category;
-    bool validInput = false;
-
-    while (!validInput) {
-        std::cout << "Enter category: ";
-
-        // Clear any newline left in the buffer from previous input
-        if (std::cin.peek() == '\n') std::cin.get();
-
-        std::getline(std::cin, category);
-
-        // Trim leading and trailing whitespace
-        category = trimWhitespace(category);
-
-        if (!category.empty()) {
-            validInput = true;
-        }
-        else {
-            std::cout << "Category cannot be empty. Please enter a valid category.\n";
-        }
-    }
-
-    return category;
-}
-
 time_t TransactionInput::getValidDate() {
     // For simplicity, we'll just use the current date
     return std::time(nullptr);
 }
 
+// Update addIncomeTransaction to use the new method
 void TransactionInput::addIncomeTransaction() {
-    // Clear any previous input errors
-    std::cin.clear();
-
     std::cout << "\n=== Add Income Transaction ===\n";
 
-    // Get amount
+    // Get transaction amount
     double amount = getValidAmount();
 
-    // Get category
-    std::string category = getValidCategory();
+    // Get transaction category
+    std::string category = getValidCategory(TransactionType::INCOME);
 
-    // Use current date for simplicity
+    // Get date (using current date for simplicity)
     time_t date = getValidDate();
 
     // Create and add the transaction
-    auto transaction = std::make_shared<Transaction>(
-        amount,
-        date,
-        category,
-        TransactionType::INCOME
-    );
-
+    std::shared_ptr<Transaction> transaction = std::make_shared<Transaction>(
+        amount, date, category, TransactionType::INCOME);
     transactionManager.addTransaction(transaction);
 
-    std::cout << "\nIncome transaction added successfully!\n";
-    std::cout << "Transaction details: " << transaction->getDisplayString() << "\n\n";
+    std::cout << "\nIncome transaction added successfully:\n";
+    std::cout << transaction->getDisplayString() << "\n\n";
 }
 
+// Update addExpenseTransaction to use the new method
 void TransactionInput::addExpenseTransaction() {
-    // Clear any previous input errors
-    std::cin.clear();
-
     std::cout << "\n=== Add Expense Transaction ===\n";
 
-    // Get amount
+    // Get transaction amount
     double amount = getValidAmount();
 
-    // Get category
-    std::string category = getValidCategory();
+    // Get transaction category
+    std::string category = getValidCategory(TransactionType::EXPENSE);
 
-    // Use current date for simplicity
+    // Get date (using current date for simplicity)
     time_t date = getValidDate();
 
     // Create and add the transaction
-    auto transaction = std::make_shared<Transaction>(
-        amount,
-        date,
-        category,
-        TransactionType::EXPENSE
-    );
-
+    std::shared_ptr<Transaction> transaction = std::make_shared<Transaction>(
+        amount, date, category, TransactionType::EXPENSE);
     transactionManager.addTransaction(transaction);
 
-    std::cout << "\nExpense transaction added successfully!\n";
-    std::cout << "Transaction details: " << transaction->getDisplayString() << "\n\n";
+    std::cout << "\nExpense transaction added successfully:\n";
+    std::cout << transaction->getDisplayString() << "\n\n";
 }
 
 void TransactionInput::displayAllTransactions() const {

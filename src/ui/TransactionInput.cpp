@@ -3,6 +3,7 @@
 #include <limits>
 #include <ctime>
 #include <iomanip>
+#include <regex>
 
 // Constructor with CategoryManager
 TransactionInput::TransactionInput(TransactionManager& tManager, CategoryManager& cManager)

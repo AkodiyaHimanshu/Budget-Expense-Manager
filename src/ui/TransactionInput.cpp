@@ -3,8 +3,82 @@
 #include <limits>
 #include <ctime>
 #include <iomanip>
+#include <regex>
 
-TransactionInput::TransactionInput(TransactionManager& manager) : transactionManager(manager) {}
+// Constructor with CategoryManager
+TransactionInput::TransactionInput(TransactionManager& tManager, CategoryManager& cManager)
+    : transactionManager(tManager), categoryManager(cManager) {
+}
+
+// Get valid category using CategoryManager
+std::string TransactionInput::getValidCategory(TransactionType type) {
+    std::vector<std::string> categories = categoryManager.getAllCategories(type);
+    std::string typeName = (type == TransactionType::INCOME) ? "Income" : "Expense";
+
+    if (categories.empty()) {
+        std::cout << "No " << typeName << " categories found. Using 'Other' as default.\n";
+        return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+    }
+
+    // Display all available categories
+    std::cout << "\nAvailable " << typeName << " Categories:\n";
+    for (size_t i = 0; i < categories.size(); ++i) {
+        std::cout << (i + 1) << ". " << categories[i] << "\n";
+    }
+
+    // Option to add custom category
+    std::cout << (categories.size() + 1) << ". Add Custom Category\n\n";
+
+    // Get user selection
+    int choice;
+    std::cout << "Select category (1-" << (categories.size() + 1) << "): ";
+
+    if (std::cin >> choice && choice >= 1 && choice <= static_cast<int>(categories.size() + 1)) {
+        // Clear input buffer
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        // Handle "Add Custom Category" option
+        if (choice == static_cast<int>(categories.size() + 1)) {
+            std::string customCategory;
+            std::cout << "Enter new category name (3-25 chars, letters, numbers, spaces, &-_.()): ";
+            std::getline(std::cin, customCategory);
+
+            // Using same validation as in CategoryManagementUI
+            std::regex pattern("^[a-zA-Z0-9 &\\-_\\.\\(\\)]{3,25}$");
+            if (std::regex_match(customCategory, pattern)) {
+                if (!categoryManager.categoryExists(customCategory, type)) {
+                    if (categoryManager.addCategory(customCategory, type)) {
+                        std::cout << "Added new category: " << customCategory << "\n";
+                        return customCategory;
+                    }
+                    else {
+                        std::cout << "Failed to add custom category. Using 'Other' instead.\n";
+                        return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+                    }
+                }
+                else {
+                    std::cout << "Category already exists. Using '" << customCategory << "'.\n";
+                    return customCategory;
+                }
+            }
+            else {
+                std::cout << "Invalid category name. Using 'Other' instead.\n";
+                return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+            }
+        }
+        else {
+            // Return the selected category
+            return categories[choice - 1];
+        }
+    }
+    else {
+        // Invalid input, clear buffer and use default
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Invalid selection. Using 'Other' as default.\n";
+        return type == TransactionType::INCOME ? "Other Income" : "Other Expenses";
+    }
+}
 
 // Helper function to trim leading and trailing whitespace
 std::string trimWhitespace(const std::string& str) {
@@ -121,142 +195,59 @@ double TransactionInput::getValidAmount() {
     return amount;
 }
 
-std::string TransactionInput::getValidCategory() {
-    std::string category;
-    bool validInput = false;
-
-    while (!validInput) {
-        std::cout << "Enter category: ";
-
-        // Clear any newline left in the buffer from previous input
-        if (std::cin.peek() == '\n') std::cin.get();
-
-        std::getline(std::cin, category);
-
-        // Trim leading and trailing whitespace
-        category = trimWhitespace(category);
-
-        if (!category.empty()) {
-            validInput = true;
-        }
-        else {
-            std::cout << "Category cannot be empty. Please enter a valid category.\n";
-        }
-    }
-
-    return category;
-}
-
 time_t TransactionInput::getValidDate() {
     // For simplicity, we'll just use the current date
     return std::time(nullptr);
 }
 
+// Update addIncomeTransaction to use the new method
 void TransactionInput::addIncomeTransaction() {
-    // Clear any previous input errors
-    std::cin.clear();
-
     std::cout << "\n=== Add Income Transaction ===\n";
 
-    // Get amount
+    // Get transaction amount
     double amount = getValidAmount();
 
-    // Get category
-    std::string category = getValidCategory();
+    // Get transaction category
+    std::string category = getValidCategory(TransactionType::INCOME);
 
-    // Use current date for simplicity
+    // Get date (using current date for simplicity)
     time_t date = getValidDate();
 
     // Create and add the transaction
-    auto transaction = std::make_shared<Transaction>(
-        amount,
-        date,
-        category,
-        TransactionType::INCOME
-    );
-
+    std::shared_ptr<Transaction> transaction = std::make_shared<Transaction>(
+        amount, date, category, TransactionType::INCOME);
     transactionManager.addTransaction(transaction);
 
-    std::cout << "\nIncome transaction added successfully!\n";
-    std::cout << "Transaction details: " << transaction->getDisplayString() << "\n\n";
+    std::cout << "\nIncome transaction added successfully:\n";
+    std::cout << transaction->getDisplayString() << "\n\n";
 }
 
+// Update addExpenseTransaction to use the new method
 void TransactionInput::addExpenseTransaction() {
-    // Clear any previous input errors
-    std::cin.clear();
-
     std::cout << "\n=== Add Expense Transaction ===\n";
 
-    // Get amount
+    // Get transaction amount
     double amount = getValidAmount();
 
-    // Get category
-    std::string category = getValidCategory();
+    // Get transaction category
+    std::string category = getValidCategory(TransactionType::EXPENSE);
 
-    // Use current date for simplicity
+    // Get date (using current date for simplicity)
     time_t date = getValidDate();
 
     // Create and add the transaction
-    auto transaction = std::make_shared<Transaction>(
-        amount,
-        date,
-        category,
-        TransactionType::EXPENSE
-    );
-
+    std::shared_ptr<Transaction> transaction = std::make_shared<Transaction>(
+        amount, date, category, TransactionType::EXPENSE);
     transactionManager.addTransaction(transaction);
 
-    std::cout << "\nExpense transaction added successfully!\n";
-    std::cout << "Transaction details: " << transaction->getDisplayString() << "\n\n";
+    std::cout << "\nExpense transaction added successfully:\n";
+    std::cout << transaction->getDisplayString() << "\n\n";
 }
 
+// Method to display all transactions
 void TransactionInput::displayAllTransactions() const {
     const auto& transactions = transactionManager.getAllTransactions();
-
-    if (transactions.empty()) {
-        std::cout << "\nNo transactions recorded yet.\n";
-        return;
-    }
-
-    // Column widths for consistent formatting
-    const int idWidth = 4;           // For transaction number
-    const int dateWidth = 20;        // For date
-    const int typeWidth = 10;        // For transaction type
-    const int amountWidth = 15;      // For amount with currency symbol
-    const int categoryWidth = 25;    // For category
-
-    // Table header with separator line
-    std::cout << "\n=== All Transactions ===\n\n";
-
-    // Print header row with column labels
-    std::cout << std::left
-        << std::setw(idWidth) << "ID" << " | "
-        << std::setw(dateWidth) << "Date & Time" << " | "
-        << std::setw(typeWidth) << "Type" << " | "
-        << std::setw(amountWidth) << "Amount" << " | "
-        << std::setw(categoryWidth) << "Category"
-        << std::endl;
-
-    // Print separator line
-    std::string separator(idWidth + dateWidth + typeWidth + amountWidth + categoryWidth + 12, '-');
-    std::cout << separator << std::endl;
-
-    // Print each transaction in tabular format
-    for (size_t i = 0; i < transactions.size(); ++i) {
-        const auto& transaction = transactions[i];
-
-        std::cout << std::left
-            << std::setw(idWidth) << (i + 1) << " | "
-            << std::setw(dateWidth) << transaction->getFormattedDate() << " | "
-            << std::setw(typeWidth) << transaction->getTypeAsString() << " | "
-            << std::setw(amountWidth) << transaction->getFormattedAmount() << " | "
-            << std::setw(categoryWidth) << transaction->getCategory()
-            << std::endl;
-    }
-
-    // Print footer separator
-    std::cout << separator << std::endl;
-    std::cout << "\nTotal Entries: " << transactions.size() << std::endl << std::endl;
+    displayTransactionsTabular(transactions, "All Transactions");
 }
 
 void TransactionInput::displaySummary() const {
@@ -326,5 +317,320 @@ void TransactionInput::displaySummary() const {
         << std::endl;
 
     // Print footer separator
+    std::cout << separator << std::endl << std::endl;
+}
+
+// Helper method to display transactions in a tabular format
+void TransactionInput::displayTransactionsTabular(const std::vector<std::shared_ptr<Transaction>>& transactions, const std::string& title) const {
+    // Define column widths for consistent formatting
+    const int idWidth = 5;            // For row numbers
+    const int dateWidth = 20;         // For date/time
+    const int typeWidth = 10;         // For transaction type (Income/Expense)
+    const int amountWidth = 15;       // For monetary values
+    const int categoryWidth = 20;     // For category names
+
+    // Print header with title
+    std::cout << "\n=== " << title << " ===\n\n";
+
+    // If no transactions, show message and return
+    if (transactions.empty()) {
+        std::cout << "No transactions found.\n\n";
+        return;
+    }
+
+    // Print header row with column labels
+    std::cout << std::left
+        << std::setw(idWidth) << "ID" << " | "
+        << std::setw(dateWidth) << "Date" << " | "
+        << std::setw(typeWidth) << "Type" << " | "
+        << std::setw(amountWidth) << "Amount" << " | "
+        << std::setw(categoryWidth) << "Category"
+        << std::endl;
+
+    // Print separator line
+    std::string separator(idWidth + dateWidth + typeWidth + amountWidth + categoryWidth + 12, '-');
+    std::cout << separator << std::endl;
+
+    // Print each transaction in tabular format
+    for (size_t i = 0; i < transactions.size(); ++i) {
+        const auto& transaction = transactions[i];
+
+        std::cout << std::left
+            << std::setw(idWidth) << (i + 1) << " | "
+            << std::setw(dateWidth) << transaction->getFormattedDate() << " | "
+            << std::setw(typeWidth) << transaction->getTypeAsString() << " | "
+            << std::setw(amountWidth) << transaction->getFormattedAmount() << " | "
+            << std::setw(categoryWidth) << transaction->getCategory()
+            << std::endl;
+    }
+
+    // Print footer separator
+    std::cout << separator << std::endl;
+
+    // Calculate and show totals
+    double totalAmount = 0.0;
+    for (const auto& transaction : transactions) {
+        if (transaction->getType() == TransactionType::INCOME) {
+            totalAmount += transaction->getAmount();
+        }
+        else {
+            totalAmount -= transaction->getAmount();
+        }
+    }
+
+    std::stringstream totalStr;
+    if (totalAmount >= 0) {
+        totalStr << "+$" << std::fixed << std::setprecision(2) << totalAmount;
+    }
+    else {
+        totalStr << "-$" << std::fixed << std::setprecision(2) << std::abs(totalAmount);
+    }
+
+    std::cout << "\nTotal Entries: " << transactions.size() << std::endl;
+    std::cout << "Net Amount: " << totalStr.str() << std::endl << std::endl;
+}
+
+// Method to display transactions filtered by category
+void TransactionInput::displayTransactionsByCategory() const {
+    // Get all available categories from both income and expense types
+    std::vector<std::string> incomeCategories = categoryManager.getAllCategories(TransactionType::INCOME);
+    std::vector<std::string> expenseCategories = categoryManager.getAllCategories(TransactionType::EXPENSE);
+
+    // Combine categories for display
+    std::vector<std::string> allCategories;
+    allCategories.insert(allCategories.end(), incomeCategories.begin(), incomeCategories.end());
+    allCategories.insert(allCategories.end(), expenseCategories.begin(), expenseCategories.end());
+
+    // Remove duplicates (in case there are categories with same name in both income and expense)
+    std::sort(allCategories.begin(), allCategories.end());
+    allCategories.erase(std::unique(allCategories.begin(), allCategories.end()), allCategories.end());
+
+    // If no categories, show message and return
+    if (allCategories.empty()) {
+        std::cout << "\nNo categories found. Please add categories first.\n";
+        return;
+    }
+
+    // Display all available categories
+    std::cout << "\n=== Filter Transactions by Category ===\n\n";
+    std::cout << "Available Categories:\n";
+    for (size_t i = 0; i < allCategories.size(); ++i) {
+        std::cout << (i + 1) << ". " << allCategories[i] << "\n";
+    }
+
+    // Get user selection with robust exception handling
+    int choice = -1;
+    bool validInput = false;
+
+    do {
+        std::cout << "\nSelect category (1-" << allCategories.size() << ", 0 to cancel): ";
+
+        // Get input as string first
+        std::string input;
+        std::getline(std::cin, input);
+
+        // Handle empty input
+        if (input.empty()) {
+            std::cout << "Error: Please enter a choice from the categories.\n";
+            continue;
+        }
+
+        try {
+            // Try to convert input to integer with exception handling
+            choice = std::stoi(input);
+
+            // Check if the choice is within valid range
+            if (choice >= 0 && choice <= static_cast<int>(allCategories.size())) {
+                validInput = true;
+            }
+            else {
+                std::cout << "Error: Please enter a number between 0 and " << allCategories.size() << ".\n";
+            }
+        }
+        catch (const std::invalid_argument&) {
+            std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
+        }
+        catch (const std::out_of_range&) {
+            std::cout << "Error: The number you entered is too large. Please try again.\n";
+        }
+
+    } while (!validInput);
+
+    // Cancel if user chose 0
+    if (choice == 0) {
+        std::cout << "Operation cancelled.\n";
+        return;
+    }
+
+    // Get the selected category
+    std::string selectedCategory = allCategories[choice - 1];
+
+    // Get transactions for the selected category
+    std::vector<std::shared_ptr<Transaction>> filteredTransactions =
+        transactionManager.getTransactionsByCategory(selectedCategory);
+
+    // Display the filtered transactions
+    displayTransactionsTabular(filteredTransactions, "Transactions in Category: " + selectedCategory);
+
+    // Calculate and display category-specific statistics
+    double categoryTotal = 0.0;
+    int incomeCount = 0, expenseCount = 0;
+    double incomeTotal = 0.0, expenseTotal = 0.0;
+
+    for (const auto& transaction : filteredTransactions) {
+        if (transaction->getType() == TransactionType::INCOME) {
+            incomeCount++;
+            incomeTotal += transaction->getAmount();
+            categoryTotal += transaction->getAmount();
+        }
+        else {
+            expenseCount++;
+            expenseTotal += transaction->getAmount();
+            categoryTotal -= transaction->getAmount();
+        }
+    }
+
+    // Display category statistics
+    std::cout << "=== Category Statistics: " << selectedCategory << " ===\n\n";
+    std::cout << "Income Transactions: " << incomeCount
+        << " ($" << std::fixed << std::setprecision(2) << incomeTotal << ")\n";
+    std::cout << "Expense Transactions: " << expenseCount
+        << " ($" << std::fixed << std::setprecision(2) << expenseTotal << ")\n";
+
+    std::stringstream netStr;
+    if (categoryTotal >= 0) {
+        netStr << "+$" << std::fixed << std::setprecision(2) << categoryTotal;
+    }
+    else {
+        netStr << "-$" << std::fixed << std::setprecision(2) << std::abs(categoryTotal);
+    }
+
+    std::cout << "Net Category Impact: " << netStr.str() << "\n\n";
+}
+
+// Method to display transactions filtered by type (income/expense)
+void TransactionInput::displayTransactionsByType() const {
+    std::cout << "\n=== Filter Transactions by Type ===\n\n";
+
+    // Get user selection with robust exception handling
+    int choice = -1;
+    bool validInput = false;
+
+    do {
+        std::cout << "Enter the type of transactions you want to view (1 = Income, 2 = Expense, 0 = Cancel): ";
+
+        // Get input as string first
+        std::string input;
+        std::getline(std::cin, input);
+
+        // Handle empty input
+        if (input.empty()) {
+            std::cout << "Error: Please enter a choice from the menu.\n";
+            continue;
+        }
+
+        try {
+            // Try to convert input to integer with exception handling
+            choice = std::stoi(input);
+
+            // Check if the choice is within valid range
+            if (choice >= 0 && choice <= 2) {
+                validInput = true;
+            }
+            else {
+                std::cout << "Error: Please enter a number between 0 and 2.\n";
+            }
+        }
+        catch (const std::invalid_argument&) {
+            std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
+        }
+        catch (const std::out_of_range&) {
+            std::cout << "Error: The number you entered is too large. Please try again.\n";
+        }
+
+    } while (!validInput);
+
+    // Cancel if user chose 0
+    if (choice == 0) {
+        std::cout << "Operation cancelled.\n";
+        return;
+    }
+
+    // Determine the type based on user choice
+    TransactionType selectedType = (choice == 1) ? TransactionType::INCOME : TransactionType::EXPENSE;
+    std::string typeName = (choice == 1) ? "Income" : "Expense";
+
+    // Get transactions for the selected type
+    std::vector<std::shared_ptr<Transaction>> filteredTransactions =
+        transactionManager.getTransactionsByType(selectedType);
+
+    // Display the filtered transactions
+    displayTransactionsTabular(filteredTransactions, typeName + " Transactions");
+
+    // If no transactions, return
+    if (filteredTransactions.empty()) {
+        return;
+    }
+
+    // Calculate and display type-specific statistics
+    double total = 0.0;
+    std::map<std::string, double> categoryTotals;
+    std::map<std::string, int> categoryCounts;
+
+    for (const auto& transaction : filteredTransactions) {
+        std::string category = transaction->getCategory();
+        double amount = transaction->getAmount();
+
+        total += amount;
+        categoryTotals[category] += amount;
+        categoryCounts[category]++;
+    }
+
+    // Display detailed breakdown by category
+    std::cout << "=== " << typeName << " Breakdown by Category ===\n\n";
+
+    // Define column widths for consistent formatting
+    const int categoryWidth = 25;
+    const int countWidth = 15;
+    const int amountWidth = 15;
+    const int percentWidth = 15;
+
+    // Print header row
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Category" << " | "
+        << std::setw(countWidth) << "Count" << " | "
+        << std::setw(amountWidth) << "Amount" << " | "
+        << std::setw(percentWidth) << "Percentage"
+        << std::endl;
+
+    // Print separator line
+    std::string separator(categoryWidth + countWidth + amountWidth + percentWidth + 9, '-');
+    std::cout << separator << std::endl;
+
+    // Print each category
+    for (const auto& [category, amount] : categoryTotals) {
+        int count = categoryCounts[category];
+        double percentage = (total > 0) ? (amount / total * 100.0) : 0.0;
+
+        std::cout << std::left
+            << std::setw(categoryWidth) << category << " | "
+            << std::setw(countWidth) << count << " | "
+            << std::setw(amountWidth) << "$" << std::fixed << std::setprecision(2) << amount << " | "
+            << std::setw(percentWidth) << std::fixed << std::setprecision(1) << percentage << "%"
+            << std::endl;
+    }
+
+    // Print separator line
+    std::cout << separator << std::endl;
+
+    // Print total row
+    std::cout << std::left
+        << std::setw(categoryWidth) << "Total" << " | "
+        << std::setw(countWidth) << filteredTransactions.size() << " | "
+        << std::setw(amountWidth) << "$" << std::fixed << std::setprecision(2) << total << " | "
+        << std::setw(percentWidth) << "100.0%"
+        << std::endl;
+
+    // Print separator line
     std::cout << separator << std::endl << std::endl;
 }

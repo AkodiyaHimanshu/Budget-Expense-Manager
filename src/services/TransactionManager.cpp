@@ -100,6 +100,7 @@ MonthlySummary TransactionManager::calculateMonthlySummary(const std::string& ye
 std::map<std::string, MonthlySummary> TransactionManager::getMonthlyTransactionSummaries() const {
     std::map<std::string, MonthlySummary> monthlySummaries;
 
+    // First, aggregate all income and expenses by month
     for (const auto& transaction : transactions) {
         time_t date = transaction->getDate();
         struct tm* timeinfo = localtime(&date);
@@ -115,7 +116,7 @@ std::map<std::string, MonthlySummary> TransactionManager::getMonthlyTransactionS
             monthlySummaries[monthKey] = { 0.0, 0.0, 0.0 };
         }
 
-        // Update the monthly summary
+        // Update the monthly income or expense total
         if (transaction->getType() == TransactionType::INCOME) {
             monthlySummaries[monthKey].totalIncome += transaction->getAmount();
         }
@@ -123,9 +124,12 @@ std::map<std::string, MonthlySummary> TransactionManager::getMonthlyTransactionS
             monthlySummaries[monthKey].totalExpenses += transaction->getAmount();
         }
 
-        // Recalculate net amount
-        monthlySummaries[monthKey].netAmount =
-            monthlySummaries[monthKey].totalIncome - monthlySummaries[monthKey].totalExpenses;
+        // Net amount will be calculated outside the loop
+    }
+
+    // Now calculate all net amounts in a separate pass
+    for (auto& [month, summary] : monthlySummaries) {
+        summary.netAmount = summary.totalIncome - summary.totalExpenses;
     }
 
     return monthlySummaries;

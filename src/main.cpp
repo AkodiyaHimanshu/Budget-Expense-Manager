@@ -96,7 +96,7 @@ int main() {
             // Transactions submenu
             int transactionChoice = -1;
             while (transactionChoice != 0) {
-                displayTransactionsMenu();
+                displayTransactionViewMenu();
 
                 // Improved input handling for transactions menu
                 std::string input;

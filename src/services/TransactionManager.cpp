@@ -1,4 +1,5 @@
 #include "../../include/services/TransactionManager.h"
+#include "../../include/utils/DateUtils.h"
 #include <algorithm>
 #include <ctime>
 #include <sstream>
@@ -45,25 +46,8 @@ double TransactionManager::calculateNetTotal() const {
 
 // Get transactions for a specific month (format: YYYY-MM)
 std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByMonth(const std::string& yearMonth) const {
-    // Validate input format (YYYY-MM)
-    if (yearMonth.length() != 7 || yearMonth[4] != '-') {
-        throw std::invalid_argument("Month format should be YYYY-MM");
-    }
-
-    // Parse year and month from input
-    int year, month;
-    try {
-        year = std::stoi(yearMonth.substr(0, 4));
-        month = std::stoi(yearMonth.substr(5, 2));
-    }
-    catch (const std::exception& e) {
-        throw std::invalid_argument("Invalid year or month format");
-    }
-
-    // Validate month value
-    if (month < 1 || month > 12) {
-        throw std::invalid_argument("Month must be between 1 and 12");
-    }
+    // Validate the year-month format using the utility function
+    DateUtils::validateYearMonth(yearMonth);
 
     std::vector<std::shared_ptr<Transaction>> monthlyTransactions;
 

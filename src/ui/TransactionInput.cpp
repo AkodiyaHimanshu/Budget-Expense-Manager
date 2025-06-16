@@ -1,4 +1,5 @@
 #include "../../include/ui/TransactionInput.h"
+#include "../../include/utils/DateUtils.h"
 #include <iostream>
 #include <limits>
 #include <ctime>
@@ -331,22 +332,13 @@ std::string TransactionInput::getValidYearMonth() {
         std::getline(std::cin, yearMonth);
 
         if (std::regex_match(yearMonth, pattern)) {
-            // Additional validation for month value (1-12)
+            // Validate using the shared utility function
             try {
-                int year = std::stoi(yearMonth.substr(0, 4));
-                int month = std::stoi(yearMonth.substr(5, 2));
-
-                if (year < 1900 || year > 2100) {
-                    std::cout << "Year must be between 1900 and 2100. Please try again.\n";
-                    continue;
-                }
-
-                if (month < 1 || month > 12) {
-                    std::cout << "Month must be between 1 and 12. Please try again.\n";
-                    continue;
-                }
-
+                DateUtils::validateYearMonth(yearMonth);
                 isValid = true;
+            }
+            catch (const std::invalid_argument& e) {
+                std::cout << "Error: " << e.what() << ". Please try again.\n";
             }
             catch (const std::exception& e) {
                 std::cout << "Invalid format. Please use YYYY-MM format (e.g., 2025-06).\n";

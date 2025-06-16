@@ -15,6 +15,8 @@
 #include "../services/TransactionManager.h"
 #include "../services/CategoryManager.h"
 
+// Note: The implementation file needs to include "../utils/DateUtils.h" as well
+
 class TransactionInput {
 private:
     TransactionManager& transactionManager;

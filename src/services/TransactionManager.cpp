@@ -68,11 +68,8 @@ std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByM
     std::vector<std::shared_ptr<Transaction>> monthlyTransactions;
 
     for (const auto& transaction : transactions) {
-        time_t transactionDate = transaction->getDate();
-        struct tm* timeinfo = localtime(&transactionDate);
-
-        // Check if transaction is in the specified month and year
-        if ((timeinfo->tm_year + 1900) == year && (timeinfo->tm_mon + 1) == month) {
+        // Get the cached month key and compare directly with the input yearMonth
+        if (transaction->getMonthKey() == yearMonth) {
             monthlyTransactions.push_back(transaction);
         }
     }
@@ -109,14 +106,8 @@ std::map<std::string, MonthlySummary> TransactionManager::getMonthlyTransactionS
 
     // First, aggregate all income and expenses by month
     for (const auto& transaction : transactions) {
-        time_t date = transaction->getDate();
-        struct tm* timeinfo = localtime(&date);
-
-        // Create month key in YYYY-MM format
-        std::ostringstream oss;
-        oss << std::setfill('0') << (timeinfo->tm_year + 1900) << "-"
-            << std::setw(2) << (timeinfo->tm_mon + 1);
-        std::string monthKey = oss.str();
+        // Get the cached month key (YYYY-MM) from the transaction
+        std::string monthKey = transaction->getMonthKey();
 
         // Create month entry if it doesn't exist
         if (monthlySummaries.find(monthKey) == monthlySummaries.end()) {

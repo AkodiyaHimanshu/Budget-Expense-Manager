@@ -1,4 +1,5 @@
 #include "../../include/ui/TransactionInput.h"
+#include "../../include/utils/DateUtils.h"
 #include <iostream>
 #include <limits>
 #include <ctime>
@@ -253,7 +254,7 @@ void TransactionInput::displayAllTransactions() const {
 void TransactionInput::displaySummary() const {
     double totalIncome = transactionManager.calculateTotal(TransactionType::INCOME);
     double totalExpense = transactionManager.calculateTotal(TransactionType::EXPENSE);
-    double balance = totalIncome - totalExpense;
+    double balance = transactionManager.calculateNetTotal();
 
     // Get count of each type of transaction
     size_t incomeCount = transactionManager.getTransactionsByType(TransactionType::INCOME).size();
@@ -319,6 +320,258 @@ void TransactionInput::displaySummary() const {
     // Print footer separator
     std::cout << separator << std::endl << std::endl;
 }
+
+// Helper method to get a valid YYYY-MM format string from user input
+std::string TransactionInput::getValidYearMonth() {
+    std::string yearMonth;
+    std::regex pattern("^\\d{4}-\\d{2}$"); // Regex pattern for YYYY-MM format
+    bool isValid = false;
+
+    while (!isValid) {
+        std::cout << "Enter month (YYYY-MM format): ";
+        std::getline(std::cin, yearMonth);
+
+        if (std::regex_match(yearMonth, pattern)) {
+            // Validate using the shared utility function
+            try {
+                DateUtils::validateYearMonth(yearMonth);
+                isValid = true;
+            }
+            catch (const std::invalid_argument& e) {
+                std::cout << "Error: " << e.what() << ". Please try again.\n";
+            }
+            catch (const std::exception& e) {
+                std::cout << "Invalid format. Please use YYYY-MM format (e.g., 2025-06).\n";
+            }
+        }
+        else {
+            std::cout << "Invalid format. Please use YYYY-MM format (e.g., 2025-06).\n";
+        }
+    }
+
+    return yearMonth;
+}
+
+// Display transactions for a specific month (YYYY-MM)
+void TransactionInput::displayMonthlyTransactions() {
+    // Get month input from user
+    std::string yearMonth = getValidYearMonth();
+
+    try {
+        // Get transactions for the specified month
+        std::vector<std::shared_ptr<Transaction>> monthTransactions =
+            transactionManager.getTransactionsByMonth(yearMonth);
+
+        if (monthTransactions.empty()) {
+            std::cout << "\nNo transactions found for " << yearMonth << ".\n";
+            return;
+        }
+
+        // Column widths for consistent formatting
+        const int idWidth = 4;
+        const int dateWidth = 20;
+        const int typeWidth = 10;
+        const int amountWidth = 15;
+        const int categoryWidth = 25;
+
+        // Table header
+        std::cout << "\n=== Transactions for " << yearMonth << " ===\n\n";
+
+        // Print header row with column labels
+        std::cout << std::left
+            << std::setw(idWidth) << "ID" << " | "
+            << std::setw(dateWidth) << "Date & Time" << " | "
+            << std::setw(typeWidth) << "Type" << " | "
+            << std::setw(amountWidth) << "Amount" << " | "
+            << std::setw(categoryWidth) << "Category"
+            << std::endl;
+
+        // Print separator line
+        std::string separator(idWidth + dateWidth + typeWidth + amountWidth + categoryWidth + 12, '-');
+        std::cout << separator << std::endl;
+
+        // Print each transaction in tabular format
+        for (size_t i = 0; i < monthTransactions.size(); ++i) {
+            const auto& transaction = monthTransactions[i];
+
+            std::cout << std::left
+                << std::setw(idWidth) << (i + 1) << " | "
+                << std::setw(dateWidth) << transaction->getFormattedDate() << " | "
+                << std::setw(typeWidth) << transaction->getTypeAsString() << " | "
+                << std::setw(amountWidth) << transaction->getFormattedAmount() << " | "
+                << std::setw(categoryWidth) << transaction->getCategory()
+                << std::endl;
+        }
+
+        // Print separator line
+        std::cout << separator << std::endl;
+
+        // Print transaction count
+        std::cout << "\nTotal Transactions: " << monthTransactions.size() << std::endl << std::endl;
+
+    }
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+    }
+}
+
+// Display summary for a specific month (YYYY-MM)
+void TransactionInput::displayMonthlySummary() {
+    // Get month input from user
+    std::string yearMonth = getValidYearMonth();
+
+    try {
+        // Calculate monthly summary
+        MonthlySummary summary = transactionManager.calculateMonthlySummary(yearMonth);
+
+        // Column widths for consistent formatting
+        const int categoryWidth = 20;
+        const int amountWidth = 20;
+
+        // Display the summary
+        std::cout << "\n===== Monthly Summary for " << yearMonth << " =====\n\n";
+
+        // Print header row with column labels
+        std::cout << std::left
+            << std::setw(categoryWidth) << "Category" << " | "
+            << std::setw(amountWidth) << "Amount"
+            << std::endl;
+
+        // Print separator line
+        std::string separator(categoryWidth + amountWidth + 3, '-');
+        std::cout << separator << std::endl;
+
+        // Format monetary values
+        std::stringstream incomeStr, expenseStr, netStr;
+
+        incomeStr << "$" << std::fixed << std::setprecision(2) << summary.totalIncome;
+        expenseStr << "$" << std::fixed << std::setprecision(2) << summary.totalExpenses;
+
+        // Format net amount with sign
+        if (summary.netAmount >= 0) {
+            netStr << "+$" << std::fixed << std::setprecision(2) << summary.netAmount;
+        }
+        else {
+            netStr << "-$" << std::fixed << std::setprecision(2) << std::abs(summary.netAmount);
+        }
+
+        // Print Income row
+        std::cout << std::left
+            << std::setw(categoryWidth) << "Total Income" << " | "
+            << std::setw(amountWidth) << incomeStr.str()
+            << std::endl;
+
+        // Print Expense row
+        std::cout << std::left
+            << std::setw(categoryWidth) << "Total Expenses" << " | "
+            << std::setw(amountWidth) << expenseStr.str()
+            << std::endl;
+
+        // Print separator before balance
+        std::cout << separator << std::endl;
+
+        // Print Net Amount row
+        std::cout << std::left
+            << std::setw(categoryWidth) << "Net Amount" << " | "
+            << std::setw(amountWidth) << netStr.str()
+            << std::endl;
+
+        // Print separator
+        std::cout << separator << std::endl;
+
+        // Print status message
+        std::cout << "\nStatus: ";
+        if (summary.netAmount > 0) {
+            std::cout << "Surplus (You saved money this month)";
+        }
+        else if (summary.netAmount < 0) {
+            std::cout << "Deficit (You spent more than you earned this month)";
+        }
+        else {
+            std::cout << "Balanced (Income equals expenses for this month)";
+        }
+        std::cout << std::endl << std::endl;
+
+    }
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+    }
+}
+
+// Display summaries for all months
+void TransactionInput::displayAllMonthlySummaries() const {
+    // Get monthly summaries (using const reference to avoid copying the map)
+    const std::map<std::string, MonthlySummary>& summaries = transactionManager.getMonthlyTransactionSummaries();
+
+    if (summaries.empty()) {
+        std::cout << "\nNo transaction data available.\n";
+        return;
+    }
+
+    // Column widths for table formatting
+    const int monthWidth = 10;
+    const int incomeWidth = 15;
+    const int expenseWidth = 15;
+    const int netWidth = 15;
+    const int statusWidth = 12;
+
+    // Display header
+    std::cout << "\n===== Monthly Financial Summaries =====\n\n";
+    std::cout << std::left << std::setw(monthWidth) << "Month"
+        << std::right << std::setw(incomeWidth) << "Income"
+        << std::setw(expenseWidth) << "Expenses"
+        << std::setw(netWidth) << "Net Amount"
+        << std::setw(statusWidth) << "Status" << std::endl;
+
+    // Print separator line
+    std::string separator(monthWidth + incomeWidth + expenseWidth + netWidth + statusWidth, '-');
+    std::cout << separator << std::endl;
+
+    // Variables to track totals
+    double totalIncome = 0.0, totalExpenses = 0.0, totalNet = 0.0;
+
+    // Display each month's summary
+    for (const auto& [month, summary] : summaries) {
+        std::string status;
+        if (summary.netAmount > 0) {
+            status = "Surplus";
+        }
+        else if (summary.netAmount < 0) {
+            status = "Deficit";
+        }
+        else {
+            status = "Balanced";
+        }
+
+        std::cout << std::left << std::setw(monthWidth) << month
+            << std::right << std::fixed << std::setprecision(2)
+            << std::setw(incomeWidth) << "$" + std::to_string(summary.totalIncome)
+            << std::setw(expenseWidth) << "$" + std::to_string(summary.totalExpenses)
+            << std::setw(netWidth) << "$" + std::to_string(summary.netAmount)
+            << std::setw(statusWidth) << status << std::endl;
+
+        // Update totals
+        totalIncome += summary.totalIncome;
+        totalExpenses += summary.totalExpenses;
+        totalNet += summary.netAmount;
+    }
+
+    // Print separator line
+    std::cout << separator << std::endl;
+
+    // Display totals row
+    std::cout << std::left << std::setw(monthWidth) << "TOTAL"
+        << std::right << std::fixed << std::setprecision(2)
+        << std::setw(incomeWidth) << "$" + std::to_string(totalIncome)
+        << std::setw(expenseWidth) << "$" + std::to_string(totalExpenses)
+        << std::setw(netWidth) << "$" + std::to_string(totalNet)
+        << std::setw(statusWidth) << (totalNet >= 0 ? "Surplus" : "Deficit") << std::endl;
+
+    // Print separator line
+    std::cout << separator << std::endl << std::endl;
+}
+
+
 
 // Helper method to display transactions in a tabular format
 void TransactionInput::displayTransactionsTabular(const std::vector<std::shared_ptr<Transaction>>& transactions, const std::string& title) const {

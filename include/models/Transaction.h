@@ -18,6 +18,12 @@ private:
     std::string category;
     TransactionType type;
 
+    // Cached YYYY-MM string to avoid repeated localtime() calls
+    mutable std::string cachedMonthKey;
+
+    // Helper method to generate the month key
+    void updateMonthKeyCache() const;
+
 public:
     // Constructors
     Transaction();
@@ -42,6 +48,9 @@ public:
     std::string getFormattedAmount() const;
     std::string getTypeAsString() const;
     std::string getDisplayString() const;
+
+    // Get month key in YYYY-MM format (uses caching to avoid repeated localtime() calls)
+    std::string getMonthKey() const;
 };
 
 #endif // TRANSACTION_H

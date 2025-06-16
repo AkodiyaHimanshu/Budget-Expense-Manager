@@ -13,20 +13,30 @@ void displayMenu() {
     std::cout << "2. Record New Expense\n";
     std::cout << "3. View Transactions\n";
     std::cout << "4. View Financial Summary\n";
-    std::cout << "5. Manage Categories\n";
+    std::cout << "5. View Monthly Analysis\n";
+    std::cout << "6. Manage Categories\n";
     std::cout << "0. Exit Application\n\n";
-    std::cout << "Please enter your choice (0-5): ";
+    std::cout << "Please enter your choice (0-6): ";
 }
 
-void displayTransactionsMenu() {
-    std::cout << "\n----- View Transactions -----\n";
-    std::cout << "How would you like to view your transactions?\n\n";
+void displayTransactionViewMenu() {
+    std::cout << "\n=== View Transactions ===\n";
     std::cout << "1. View All Transactions\n";
-    std::cout << "2. Filter by Category\n";
-    std::cout << "3. Filter by Type (Income/Expense)\n";
+    std::cout << "2. View Transactions by Category\n";
+    std::cout << "3. View Transactions by Type (Income/Expense)\n";
     std::cout << "0. Return to Main Menu\n\n";
     std::cout << "Please enter your choice (0-3): ";
 }
+
+void displayMonthlyAnalysisMenu() {
+    std::cout << "\n=== Monthly Analysis ===\n";
+    std::cout << "1. View Transactions for a Specific Month\n";
+    std::cout << "2. View Summary for a Specific Month\n";
+    std::cout << "3. View All Monthly Summaries\n";
+    std::cout << "0. Return to Main Menu\n\n";
+    std::cout << "Please enter your choice (0-3): ";
+}
+
 
 int main() {
     // Create our service managers
@@ -55,6 +65,12 @@ int main() {
         try {
             // Try to convert input to integer
             choice = std::stoi(input);
+
+            // Validate choice range
+            if (choice < 0 || choice > 6) {
+                std::cout << "Error: Please enter a choice between 0 and 6.\n";
+                continue;
+            }
         }
         catch (const std::invalid_argument&) {
             std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
@@ -80,7 +96,7 @@ int main() {
             // Transactions submenu
             int transactionChoice = -1;
             while (transactionChoice != 0) {
-                displayTransactionsMenu();
+                displayTransactionViewMenu();
 
                 // Improved input handling for transactions menu
                 std::string input;
@@ -128,6 +144,53 @@ int main() {
             break;
         case 5:
         {
+            // Monthly analysis submenu
+            int monthlyChoice = -1;
+            while (monthlyChoice != 0) {
+                displayMonthlyAnalysisMenu();
+
+                // Get user input with exception handling
+                std::string input;
+                std::getline(std::cin, input);
+
+                // Handle empty input
+                if (input.empty()) {
+                    std::cout << "Please select an option from the menu.\n";
+                    continue;
+                }
+
+                try {
+                    // Try to convert input to integer
+                    monthlyChoice = std::stoi(input);
+
+                    switch (monthlyChoice) {
+                    case 0:
+                        std::cout << "Returning to main menu...\n";
+                        break;
+                    case 1:
+                        inputHandler.displayMonthlyTransactions();
+                        break;
+                    case 2:
+                        inputHandler.displayMonthlySummary();
+                        break;
+                    case 3:
+                        inputHandler.displayAllMonthlySummaries();
+                        break;
+                    default:
+                        std::cout << "Sorry, that's not a valid option. Please choose between 0 and 3.\n";
+                    }
+                }
+                catch (const std::invalid_argument&) {
+                    std::cout << "Sorry, '" << input << "' isn't a valid option. Please choose a number from the menu.\n";
+                }
+                catch (const std::out_of_range&) {
+                    std::cout << "That number is too large. Please enter a number between 0 and 3.\n";
+                }
+            }
+            break;
+        }
+        case 6:
+        {
             // Category management submenu
             int categoryChoice = -1;
             while (categoryChoice != 0) {
@@ -170,7 +233,7 @@ int main() {
                     categoryUI.removeCustomCategory();
                     break;
                 default:
-                    std::cout << "Invalid choice. Please try again.\n";
+                    std::cout << "Invalid choice. Please try again (0-6).\n";
                     // Clear input buffer
                     std::cin.clear();
                     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

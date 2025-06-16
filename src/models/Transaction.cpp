@@ -1,10 +1,15 @@
 #include "../../include/models/Transaction.h"
 
 // Constructors
-Transaction::Transaction() : amount(0.0), date(time(nullptr)), category("Uncategorized"), type(TransactionType::EXPENSE) {}
+Transaction::Transaction()
+    : amount(0.0), date(time(nullptr)), category("Uncategorized"),
+    type(TransactionType::EXPENSE), cachedMonthKey("") {
+    updateMonthKeyCache();
+}
 
 Transaction::Transaction(double amount, time_t date, const std::string& category, TransactionType type)
-    : amount(amount), date(date), category(category), type(type) {
+    : amount(amount), date(date), category(category), type(type), cachedMonthKey("") {
+    updateMonthKeyCache();
 }
 
 // Getters and Setters
@@ -22,6 +27,8 @@ time_t Transaction::getDate() const {
 
 void Transaction::setDate(time_t date) {
     this->date = date;
+    // Date changed, so we need to update the cached month key
+    updateMonthKeyCache();
 }
 
 std::string Transaction::getCategory() const {
@@ -64,4 +71,22 @@ std::string Transaction::getDisplayString() const {
         << getTypeAsString() << ": "
         << getFormattedAmount() << " (" << category << ")";
     return oss.str();
+}
+
+// Helper method to update the cached month key
+void Transaction::updateMonthKeyCache() const {
+    struct tm* timeinfo = localtime(&date);
+    std::ostringstream oss;
+    oss << std::setfill('0') << (timeinfo->tm_year + 1900) << "-"
+        << std::setw(2) << (timeinfo->tm_mon + 1);
+    cachedMonthKey = oss.str();
+}
+
+// Get month key in YYYY-MM format (uses caching to avoid repeated localtime() calls)
+std::string Transaction::getMonthKey() const {
+    // If the cached month key is empty, generate it
+    if (cachedMonthKey.empty()) {
+        updateMonthKeyCache();
+    }
+    return cachedMonthKey;
 }

@@ -253,7 +253,7 @@ void TransactionInput::displayAllTransactions() const {
 void TransactionInput::displaySummary() const {
     double totalIncome = transactionManager.calculateTotal(TransactionType::INCOME);
     double totalExpense = transactionManager.calculateTotal(TransactionType::EXPENSE);
-    double balance = totalIncome - totalExpense;
+    double balance = transactionManager.calculateNetTotal();
 
     // Get count of each type of transaction
     size_t incomeCount = transactionManager.getTransactionsByType(TransactionType::INCOME).size();

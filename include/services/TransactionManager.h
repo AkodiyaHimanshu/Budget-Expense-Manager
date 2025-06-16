@@ -12,11 +12,21 @@ struct MonthlySummary {
     double totalIncome;
     double totalExpenses;
     double netAmount;
+
+    // Method to calculate and update net amount
+    void updateNetAmount() {
+        netAmount = totalIncome - totalExpenses;
+    }
 };
 
 class TransactionManager {
 private:
     std::vector<std::shared_ptr<Transaction>> transactions;
+
+    // Utility method to calculate net amount (income - expenses)
+    static double calculateNetAmount(double income, double expenses) {
+        return income - expenses;
+    }
 
 public:
     // Add a transaction to the in-memory list
@@ -33,6 +43,9 @@ public:
 
     // Calculate total for a specific transaction type
     double calculateTotal(TransactionType type) const;
+
+    // Calculate net amount (income - expenses) across all transactions
+    double calculateNetTotal() const;
 
     // Get transactions for a specific month (format: YYYY-MM)
     std::vector<std::shared_ptr<Transaction>> getTransactionsByMonth(const std::string& yearMonth) const;

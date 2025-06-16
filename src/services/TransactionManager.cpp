@@ -36,6 +36,13 @@ double TransactionManager::calculateTotal(TransactionType type) const {
     return total;
 }
 
+// Calculate net amount (income - expenses) across all transactions
+double TransactionManager::calculateNetTotal() const {
+    double totalIncome = calculateTotal(TransactionType::INCOME);
+    double totalExpenses = calculateTotal(TransactionType::EXPENSE);
+    return calculateNetAmount(totalIncome, totalExpenses);
+}
+
 // Get transactions for a specific month (format: YYYY-MM)
 std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByMonth(const std::string& yearMonth) const {
     // Validate input format (YYYY-MM)
@@ -90,8 +97,8 @@ MonthlySummary TransactionManager::calculateMonthlySummary(const std::string& ye
         }
     }
 
-    // Calculate net amount (income - expenses)
-    summary.netAmount = summary.totalIncome - summary.totalExpenses;
+    // Calculate net amount using the dedicated method
+    summary.updateNetAmount();
 
     return summary;
 }
@@ -127,9 +134,9 @@ std::map<std::string, MonthlySummary> TransactionManager::getMonthlyTransactionS
         // Net amount will be calculated outside the loop
     }
 
-    // Now calculate all net amounts in a separate pass
+    // Now calculate all net amounts in a separate pass using the dedicated method
     for (auto& [month, summary] : monthlySummaries) {
-        summary.netAmount = summary.totalIncome - summary.totalExpenses;
+        summary.updateNetAmount();
     }
 
     return monthlySummaries;

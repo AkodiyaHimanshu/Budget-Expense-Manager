@@ -5,6 +5,12 @@
 #include <memory>
 #include <iostream>
 #include <limits>
+#include <regex>
+#include <algorithm>
+#include <sstream>
+#include <map>
+#include <iomanip>
+#include <stdexcept>  // For std::invalid_argument and std::out_of_range exceptions
 #include "../models/Transaction.h"
 #include "../services/TransactionManager.h"
 #include "../services/CategoryManager.h"
@@ -18,31 +24,26 @@ private:
     double getValidAmount();
     std::string getValidCategory(TransactionType type);
     time_t getValidDate(); // For simplicity, we'll use current date in implementation
+    std::string getValidYearMonth(); // Get a valid YYYY-MM format string
 
     // Helper method to display transactions in a tabular format
     void displayTransactionsTabular(const std::vector<std::shared_ptr<Transaction>>& transactions, const std::string& title) const;
 
 public:
-    // Constructor
-    TransactionInput(TransactionManager& tManager, CategoryManager& cManager);
+    TransactionInput(TransactionManager& manager, CategoryManager& catManager);
 
-    // Method to handle income transaction input
+    // Add methods for transaction entry
     void addIncomeTransaction();
-
-    // Method to handle expense transaction input
     void addExpenseTransaction();
 
-    // Method to display all transactions
+    // Display methods
     void displayAllTransactions() const;
-
-    // Method to display transactions filtered by category
     void displayTransactionsByCategory() const;
-
-    // Method to display transactions filtered by type (income/expense)
     void displayTransactionsByType() const;
-
-    // Method to display financial summary
-    void displaySummary() const;
+    void displaySummary() const; // Show basic summary statistics
+    void displayMonthlyTransactions(); // Display transactions for a specific month
+    void displayMonthlySummary(); // Display summary for a specific month
+    void displayAllMonthlySummaries() const; // Display summaries for all months
 };
 
 #endif // TRANSACTION_INPUT_H

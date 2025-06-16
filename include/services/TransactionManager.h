@@ -23,9 +23,25 @@ class TransactionManager {
 private:
     std::vector<std::shared_ptr<Transaction>> transactions;
 
+    // Cache for monthly summaries to avoid redundant calculations
+    mutable std::map<std::string, MonthlySummary> monthlySummaryCache;
+
+    // Cache for monthly transactions
+    mutable std::map<std::string, std::vector<std::shared_ptr<Transaction>>> monthlyTransactionsCache;
+
+    // Flag to track if the cache needs to be invalidated
+    mutable bool cacheValid = true;
+
     // Utility method to calculate net amount (income - expenses)
     static double calculateNetAmount(double income, double expenses) {
         return income - expenses;
+    }
+
+    // Utility method to clear all caches
+    void clearCaches() const {
+        monthlySummaryCache.clear();
+        monthlyTransactionsCache.clear();
+        cacheValid = true;
     }
 
 public:

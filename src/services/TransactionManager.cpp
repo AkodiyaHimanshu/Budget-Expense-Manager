@@ -8,7 +8,18 @@
 void TransactionManager::addTransaction(std::shared_ptr<Transaction> transaction) {
     transactions.push_back(transaction);
 
-    // Invalidate cache since data has changed
+    // Get the month of the new transaction
+    std::string monthKey = transaction->getMonthKey();
+
+    // Invalidate specific caches
+
+    // 1. Remove the monthly transactions cache entry for this month
+    monthlyTransactionsCache.erase(monthKey);
+
+    // 2. Remove the monthly summary cache entry for this month
+    monthlySummaryCache.erase(monthKey);
+
+    // 3. Mark overall cache as invalid since total summaries would change
     cacheValid = false;
 }
 
@@ -52,10 +63,8 @@ std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByM
     // Validate the year-month format using the utility function
     DateUtils::validateYearMonth(yearMonth);
 
-    // If cache is invalid, clear it
-    if (!cacheValid) {
-        clearCaches();
-    }
+    // Make sure cache is valid
+    validateCache();
 
     // Check if we have a cached result for this month
     auto cacheIt = monthlyTransactionsCache.find(yearMonth);
@@ -85,10 +94,8 @@ MonthlySummary TransactionManager::calculateMonthlySummary(const std::string& ye
     // Validate the year-month format using the utility function
     DateUtils::validateYearMonth(yearMonth);
 
-    // If cache is invalid, clear it
-    if (!cacheValid) {
-        clearCaches();
-    }
+    // Make sure cache is valid
+    validateCache();
 
     // Check if we have a cached result for this month
     auto cacheIt = monthlySummaryCache.find(yearMonth);
@@ -100,7 +107,7 @@ MonthlySummary TransactionManager::calculateMonthlySummary(const std::string& ye
     // Cache miss - compute the result
     MonthlySummary summary = { 0.0, 0.0, 0.0 }; // Initialize with zeros
 
-    // Get all transactions for the specified month
+    // Get all transactions for the specified month (this also populates monthlyTransactionsCache)
     auto monthlyTransactions = getTransactionsByMonth(yearMonth);
 
     // Calculate income and expenses
@@ -125,14 +132,12 @@ MonthlySummary TransactionManager::calculateMonthlySummary(const std::string& ye
 // Group transactions by month and return monthly summaries
 // Returns a const reference to avoid copying the entire map
 const std::map<std::string, MonthlySummary>& TransactionManager::getMonthlyTransactionSummaries() const {
-    // If the result is already cached and the cache is valid, we can return the cache directly
-    if (cacheValid && !monthlySummaryCache.empty()) {
-        return monthlySummaryCache;
-    }
+    // Make sure cache is valid
+    validateCache();
 
-    // If cache is invalid, clear it
-    if (!cacheValid) {
-        clearCaches();
+    // If the cache already has data, we can return it directly
+    if (!monthlySummaryCache.empty()) {
+        return monthlySummaryCache;
     }
 
     // We'll update the cache directly instead of creating a temporary map

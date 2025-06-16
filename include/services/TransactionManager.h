@@ -44,6 +44,13 @@ private:
         cacheValid = true;
     }
 
+    // Utility method to check if cache is valid and clear if necessary
+    void validateCache() const {
+        if (!cacheValid) {
+            clearCaches();
+        }
+    }
+
 public:
     // Add a transaction to the in-memory list
     void addTransaction(std::shared_ptr<Transaction> transaction);

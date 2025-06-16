@@ -123,10 +123,10 @@ MonthlySummary TransactionManager::calculateMonthlySummary(const std::string& ye
 }
 
 // Group transactions by month and return monthly summaries
-std::map<std::string, MonthlySummary> TransactionManager::getMonthlyTransactionSummaries() const {
-    // If the result is already cached and the cache is valid, we can reuse individual monthly summaries
+// Returns a const reference to avoid copying the entire map
+const std::map<std::string, MonthlySummary>& TransactionManager::getMonthlyTransactionSummaries() const {
+    // If the result is already cached and the cache is valid, we can return the cache directly
     if (cacheValid && !monthlySummaryCache.empty()) {
-        // Since we have individual monthly summaries cached, we can reuse them
         return monthlySummaryCache;
     }
 
@@ -135,34 +135,32 @@ std::map<std::string, MonthlySummary> TransactionManager::getMonthlyTransactionS
         clearCaches();
     }
 
-    std::map<std::string, MonthlySummary> monthlySummaries;
+    // We'll update the cache directly instead of creating a temporary map
+    // This avoids an unnecessary copy when returning the result
 
     // First, aggregate all income and expenses by month
     for (const auto& transaction : transactions) {
         // Get the cached month key (YYYY-MM) from the transaction
         std::string monthKey = transaction->getMonthKey();
 
-        // Create month entry if it doesn't exist
-        if (monthlySummaries.find(monthKey) == monthlySummaries.end()) {
-            monthlySummaries[monthKey] = { 0.0, 0.0, 0.0 };
+        // Create month entry in cache if it doesn't exist
+        if (monthlySummaryCache.find(monthKey) == monthlySummaryCache.end()) {
+            monthlySummaryCache[monthKey] = { 0.0, 0.0, 0.0 };
         }
 
-        // Update the monthly income or expense total
+        // Update the monthly income or expense total directly in the cache
         if (transaction->getType() == TransactionType::INCOME) {
-            monthlySummaries[monthKey].totalIncome += transaction->getAmount();
+            monthlySummaryCache[monthKey].totalIncome += transaction->getAmount();
         }
         else {
-            monthlySummaries[monthKey].totalExpenses += transaction->getAmount();
+            monthlySummaryCache[monthKey].totalExpenses += transaction->getAmount();
         }
     }
 
     // Now calculate all net amounts in a separate pass using the dedicated method
-    for (auto& [month, summary] : monthlySummaries) {
+    for (auto& [month, summary] : monthlySummaryCache) {
         summary.updateNetAmount();
-
-        // Update the cache for individual months
-        monthlySummaryCache[month] = summary;
     }
 
-    return monthlySummaries;
+    return monthlySummaryCache;
 }

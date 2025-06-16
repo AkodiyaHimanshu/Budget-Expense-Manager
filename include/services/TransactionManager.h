@@ -70,7 +70,8 @@ public:
     MonthlySummary calculateMonthlySummary(const std::string& yearMonth) const;
 
     // Group transactions by month and return monthly summaries
-    std::map<std::string, MonthlySummary> getMonthlyTransactionSummaries() const;
+    // Returns a const reference to avoid copying the entire map
+    const std::map<std::string, MonthlySummary>& getMonthlyTransactionSummaries() const;
 };
 
 #endif // TRANSACTION_MANAGER_H

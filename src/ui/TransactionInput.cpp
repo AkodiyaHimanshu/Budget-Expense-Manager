@@ -500,8 +500,8 @@ void TransactionInput::displayMonthlySummary() {
 
 // Display summaries for all months
 void TransactionInput::displayAllMonthlySummaries() const {
-    // Get monthly summaries
-    std::map<std::string, MonthlySummary> summaries = transactionManager.getMonthlyTransactionSummaries();
+    // Get monthly summaries (using const reference to avoid copying the map)
+    const std::map<std::string, MonthlySummary>& summaries = transactionManager.getMonthlyTransactionSummaries();
 
     if (summaries.empty()) {
         std::cout << "\nNo transaction data available.\n";

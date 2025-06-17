@@ -79,6 +79,44 @@ public:
             throw std::runtime_error("Could not open file: " + filePath);
         }
 
+        // Estimate file size to pre-allocate memory
+        size_t estimatedLines = 100; // Default reasonable size
+
+        try {
+            // Some streams might not support seeking
+            file.seekg(0, std::ios::end);
+            const auto fileSize = file.tellg();
+            file.seekg(0, std::ios::beg);
+
+            // Reset stream state in case of errors
+            if (file.fail()) {
+                file.clear();
+                file.seekg(0, std::ios::beg);
+            }
+            else if (fileSize > 0) {
+                // Estimate the number of lines (assuming average line length of 80 characters)
+                // This is a rough estimation that helps avoid repeated memory allocations
+                const size_t avgLineLength = 80;
+                estimatedLines = std::max(size_t(100), size_t(fileSize / avgLineLength));
+
+                // Cap the estimate at a reasonable maximum to avoid excessive allocations
+                const size_t maxReasonableLines = 1000000; // 1 million lines
+                estimatedLines = std::min(estimatedLines, maxReasonableLines);
+            }
+        }
+        catch (const std::exception&) {
+            // If seeking fails for any reason, use the default estimate
+            // This handles non-seekable streams and other exceptional cases
+            file.clear();
+            file.seekg(0, std::ios::beg);
+        }
+
+        // Reserve capacity in our vectors (assume 90% of lines will be valid transactions)
+        // and 10% might have errors (adjust these ratios based on expected data quality)
+        result.transactions.reserve(estimatedLines * 0.9);
+        result.errors.reserve(estimatedLines * 0.1);
+        result.failedLines.reserve(estimatedLines * 0.1);
+
         std::string line;
         int lineNumber = 0;
         bool headerProcessed = false;

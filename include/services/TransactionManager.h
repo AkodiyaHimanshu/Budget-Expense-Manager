@@ -5,6 +5,7 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <fstream>
 #include "../models/Transaction.h"
 
 // Structure to hold monthly financial summary
@@ -78,6 +79,14 @@ public:
 
     // Group transactions by month and return monthly summaries
     // Returns a const reference to avoid copying the entire map
+
+    /**
+     * Exports all transactions to a CSV file.
+     *
+     * @param filename The path to the CSV file
+     * @return true if export was successful, false otherwise
+     */
+    bool exportTransactionsToCSV(const std::string& filename) const;
     const std::map<std::string, MonthlySummary>& getMonthlyTransactionSummaries() const;
 };
 

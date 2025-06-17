@@ -169,3 +169,31 @@ const std::map<std::string, MonthlySummary>& TransactionManager::getMonthlyTrans
 
     return monthlySummaryCache;
 }
+
+// Implementation of exportTransactionsToCSV
+bool TransactionManager::exportTransactionsToCSV(const std::string& filename) const {
+    try {
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            return false;
+        }
+
+        // Write CSV header
+        file << "Date,Type,Amount,Category" << std::endl;
+
+        // Write each transaction as a CSV row
+        for (const auto& transaction : transactions) {
+            file << transaction->getFormattedDate() << ","
+                << transaction->getTypeAsString() << ","
+                << std::fixed << std::setprecision(2) << transaction->getAmount() << ","
+                << "\"" << transaction->getCategory() << "\"" << std::endl;  // Quote category to handle commas in names
+        }
+
+        file.close();
+        return true;
+    }
+    catch (const std::exception& e) {
+        // Handle any exceptions during file operations
+        return false;
+    }
+}

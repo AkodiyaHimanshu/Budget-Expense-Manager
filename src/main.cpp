@@ -1,5 +1,7 @@
 ﻿#include <iostream>
 #include <memory>
+#include <chrono>
+#include <ctime>
 #include "../include/models/Transaction.h"
 #include "../include/services/TransactionManager.h"
 #include "../include/services/CategoryManager.h"
@@ -83,7 +85,26 @@ int main() {
 
         switch (choice) {
         case 0:
-            std::cout << "Exiting application. Goodbye!\n";
+            std::cout << "Exporting transactions to CSV file...\n";
+            // Create a timestamp for the filename
+            auto now = std::chrono::system_clock::now();
+            std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+            std::tm* now_tm = std::localtime(&now_time);
+            char timestamp[20];
+            std::strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", now_tm);
+
+            // Create the filename with timestamp
+            std::string filename = "data/transactions_" + std::string(timestamp) + ".csv";
+
+            // Export transactions to CSV
+            if (transactionManager.exportTransactionsToCSV(filename)) {
+                std::cout << "Transactions successfully saved to " << filename << std::endl;
+            }
+            else {
+                std::cout << "Error: Could not save transactions to file." << std::endl;
+            }
+
+            std::cout << "Exiting. Thank you for using Budget & Expense Manager!\n";
             break;
         case 1:
             inputHandler.addIncomeTransaction();

@@ -7,6 +7,7 @@
 #include "../include/services/CategoryManager.h"
 #include "../include/ui/TransactionInput.h"
 #include "../include/ui/CategoryManagementUI.h"
+#include "../include/utils/FileUtils.h"  // Include FileUtils header for CSV operations
 
 void displayMenu() {
     std::cout << "\n===== Budget & Expense Manager =====\n";
@@ -49,6 +50,36 @@ int main() {
     TransactionInput inputHandler(transactionManager, categoryManager);
     CategoryManagementUI categoryUI(categoryManager);
 
+    // Define the path to the transactions CSV file
+    const std::string transactionsFilePath = "data/transactions/transactions.csv";
+
+    // Load transactions from file on startup if the file exists
+    try {
+        // Check if the file exists before attempting to load
+        if (fs::exists(transactionsFilePath)) {
+            std::cout << "Loading transactions from " << transactionsFilePath << "...\n";
+            auto loadedTransactions = FileUtils::loadTransactionsFromCSV(transactionsFilePath);
+
+            // Add each transaction to the transaction manager
+            for (const auto& transaction : loadedTransactions) {
+                transactionManager.addTransaction(transaction);
+            }
+
+            std::cout << "Successfully loaded " << loadedTransactions.size() << " transactions.\n";
+        }
+        else {
+            std::cout << "No transactions file found at " << transactionsFilePath << ". Starting with empty transaction list.\n";
+
+            // Ensure the directory exists for future saves
+            fs::path path(transactionsFilePath);
+            fs::create_directories(path.parent_path());
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error loading transactions: " << e.what() << std::endl;
+        std::cerr << "Starting with empty transaction list.\n";
+    }
+
     int choice = -1;
 
     while (choice != 0) {
@@ -85,30 +116,18 @@ int main() {
 
         switch (choice) {
         case 0:
-        {  // Add a code block with braces to create proper scope for variables
-            std::cout << "Exporting transactions to CSV file...\n";
-            // Create a timestamp for the filename
-            auto now = std::chrono::system_clock::now();
-            std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-            std::tm* now_tm = std::localtime(&now_time);
-            char timestamp[20];
-            std::strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", now_tm);
-
-            // Create the filename with timestamp
-            std::string filename = "data/transactions_" + std::string(timestamp) + ".csv";
-
-            // Export transactions to CSV
-            if (transactionManager.exportTransactionsToCSV(filename)) {
-                std::cout << "Transactions successfully saved to " << filename << std::endl;
+            // Save transactions to file before exiting
+            try {
+                std::cout << "Saving transactions to " << transactionsFilePath << "...\n";
+                FileUtils::saveTransactionsToCSV(transactionManager.getAllTransactions(), transactionsFilePath);
+                std::cout << "Transactions saved successfully.\n";
             }
-            else {
-                std::cout << "Error: Failed to save transactions to file." << std::endl;
-                std::cout << "Reason: " << transactionManager.getLastErrorMessage() << std::endl;
+            catch (const std::exception& e) {
+                std::cerr << "Error saving transactions: " << e.what() << std::endl;
             }
 
-            std::cout << "Exiting. Thank you for using Budget & Expense Manager!\n";
-        }  // Close the scope
-        break;
+            std::cout << "Exiting application. Goodbye!\n";
+            break;
         case 1:
             inputHandler.addIncomeTransaction();
             break;

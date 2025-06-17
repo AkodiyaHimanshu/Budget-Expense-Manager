@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <filesystem>
 #include <utility>
+#include <algorithm>  // For std::find_if
+#include <cctype>     // For std::isspace
 #include "../../include/models/Transaction.h"
 
 namespace fs = std::filesystem;
@@ -122,9 +124,33 @@ public:
 
             // Attempt to parse the line into a transaction
             try {
+                // Check for quotes in the line which might indicate more complex CSV with commas in fields
+                if (line.find('"') != std::string::npos) {
+                    std::cout << "Line " << lineNumber << ": Warning - Quoted fields detected but not supported. "
+                        << "If categories contain commas, they should not be quoted." << std::endl;
+                }
+
                 auto transaction = parseTransactionLine(line);
                 if (transaction) {
+                    // Extra validation: check that category isn't just whitespace after trimming
+                    std::string category = transaction->getCategory();
+                    if (category.find_first_not_of(" \t\n\r") == std::string::npos) {
+                        throw std::invalid_argument("Transaction has whitespace-only category");
+                    }
+
+                    // All validation passed - add the transaction
                     result.transactions.push_back(transaction);
+
+                    // For extra clarity, indicate successful parsing for the first few transactions
+                    if (result.transactions.size() <= 3) {
+                        std::cout << "Line " << lineNumber << ": Successfully parsed "
+                            << (transaction->getType() == TransactionType::INCOME ? "income" : "expense")
+                            << " transaction of " << transaction->getFormattedAmount()
+                            << " in category '" << transaction->getCategory() << "'" << std::endl;
+                    }
+                    else if (result.transactions.size() == 4) {
+                        std::cout << "Successfully parsing remaining transactions..." << std::endl;
+                    }
                 }
             }
             catch (const std::exception& e) {
@@ -207,6 +233,25 @@ private:
         if (!std::getline(ss, typeStr, ',')) {
             throw std::invalid_argument("Missing transaction type field");
         }
+
+        // Helper function to trim whitespace
+        auto trim = [](std::string& s) {
+            // Trim leading whitespace
+            s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+                return !std::isspace(ch);
+                }));
+
+            // Trim trailing whitespace
+            s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+                return !std::isspace(ch);
+                }).base(), s.end());
+            };
+
+        // Trim whitespace from all fields
+        trim(amountStr);
+        trim(dateStr);
+        trim(category);
+        trim(typeStr);
 
         // Validate field content (check for empty fields)
         if (amountStr.empty()) {

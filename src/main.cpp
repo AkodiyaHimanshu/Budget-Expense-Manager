@@ -85,6 +85,7 @@ int main() {
 
         switch (choice) {
         case 0:
+        {  // Add a code block with braces to create proper scope for variables
             std::cout << "Exporting transactions to CSV file...\n";
             // Create a timestamp for the filename
             auto now = std::chrono::system_clock::now();
@@ -105,7 +106,8 @@ int main() {
             }
 
             std::cout << "Exiting. Thank you for using Budget & Expense Manager!\n";
-            break;
+        }  // Close the scope
+        break;
         case 1:
             inputHandler.addIncomeTransaction();
             break;

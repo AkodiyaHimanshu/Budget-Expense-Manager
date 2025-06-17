@@ -6,6 +6,8 @@
 #include <map>
 #include <string>
 #include <fstream>
+#include <filesystem>
+#include <sstream>
 #include "../models/Transaction.h"
 
 // Structure to hold monthly financial summary
@@ -32,6 +34,9 @@ private:
 
     // Flag to track if the cache needs to be invalidated
     mutable bool cacheValid = true;
+
+    // Store the most recent error message
+    mutable std::string lastErrorMessage;
 
     // Utility method to calculate net amount (income - expenses)
     static double calculateNetAmount(double income, double expenses) {
@@ -87,6 +92,16 @@ public:
      * @return true if export was successful, false otherwise
      */
     bool exportTransactionsToCSV(const std::string& filename) const;
+
+    /**
+     * Gets the most recent error message.
+     *
+     * @return String containing the most recent error message
+     */
+    std::string getLastErrorMessage() const {
+        return lastErrorMessage;
+    }
+
     const std::map<std::string, MonthlySummary>& getMonthlyTransactionSummaries() const;
 };
 

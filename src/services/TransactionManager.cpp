@@ -193,14 +193,34 @@ bool TransactionManager::exportTransactionsToCSV(const std::string& filename) co
             }
         }
 
-        // Now open the file
-        std::ofstream file(filename);
+        // Check if the file exists and has content
+        bool fileExistsWithContent = false;
+        std::error_code ec;
+        if (std::filesystem::exists(filepath, ec) && !ec) {
+            // Check if file has content (size > 0)
+            auto fileSize = std::filesystem::file_size(filepath, ec);
+            if (!ec && fileSize > 0) {
+                fileExistsWithContent = true;
+            }
+        }
+
+        // Open the file in append mode if it already has content
+        std::ofstream file;
+        if (fileExistsWithContent) {
+            file.open(filename, std::ios::app);
+        }
+        else {
+            file.open(filename);
+        }
+
         if (!file.is_open()) {
             throw std::runtime_error("Could not open file for writing: " + filename);
         }
 
-        // Write CSV header
-        file << "Date,Type,Amount,Category" << std::endl;
+        // Write CSV header only if this is a new file
+        if (!fileExistsWithContent) {
+            file << "Date,Type,Amount,Category" << std::endl;
+        }
 
         // Write each transaction as a CSV row
         for (const auto& transaction : transactions) {

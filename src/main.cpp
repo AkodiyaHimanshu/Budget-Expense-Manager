@@ -58,14 +58,27 @@ int main() {
         // Check if the file exists before attempting to load
         if (fs::exists(transactionsFilePath)) {
             std::cout << "Loading transactions from " << transactionsFilePath << "...\n";
-            auto loadedTransactions = FileUtils::loadTransactionsFromCSV(transactionsFilePath);
+            auto loadResult = FileUtils::loadTransactionsFromCSV(transactionsFilePath);
 
-            // Add each transaction to the transaction manager
-            for (const auto& transaction : loadedTransactions) {
+            // Add each successfully parsed transaction to the transaction manager
+            for (const auto& transaction : loadResult.transactions) {
                 transactionManager.addTransaction(transaction);
             }
 
-            std::cout << "Successfully loaded " << loadedTransactions.size() << " transactions.\n";
+            // Display loading summary
+            std::cout << loadResult.getSummary() << "\n";
+
+            // If there were parsing errors, show a detailed report
+            if (loadResult.hasErrors()) {
+                std::cout << "\nWARNING: Some transactions could not be loaded.\n";
+                std::cout << "Would you like to see the error details? (y/n): ";
+                std::string response;
+                std::getline(std::cin, response);
+
+                if (!response.empty() && (response[0] == 'y' || response[0] == 'Y')) {
+                    std::cout << "\n" << loadResult.getErrorReport() << "\n";
+                }
+            }
         }
         else {
             std::cout << "No transactions file found at " << transactionsFilePath << ". Starting with empty transaction list.\n";
@@ -119,8 +132,11 @@ int main() {
             // Save transactions to file before exiting
             try {
                 std::cout << "Saving transactions to " << transactionsFilePath << "...\n";
-                FileUtils::saveTransactionsToCSV(transactionManager.getAllTransactions(), transactionsFilePath);
-                std::cout << "Transactions saved successfully.\n";
+                int savedCount = FileUtils::saveTransactionsToCSV(
+                    transactionManager.getAllTransactions(),
+                    transactionsFilePath
+                );
+                std::cout << "Successfully saved " << savedCount << " transactions.\n";
             }
             catch (const std::exception& e) {
                 std::cerr << "Error saving transactions: " << e.what() << std::endl;

@@ -58,7 +58,12 @@ int main() {
         // Check if the file exists before attempting to load
         if (fs::exists(transactionsFilePath)) {
             std::cout << "Loading transactions from " << transactionsFilePath << "...\n";
+            std::cout << "-----------------------------------------------------\n";
+
+            // Load and validate transactions (errors are logged directly to console)
             auto loadResult = FileUtils::loadTransactionsFromCSV(transactionsFilePath);
+
+            std::cout << "-----------------------------------------------------\n";
 
             // Add each successfully parsed transaction to the transaction manager
             for (const auto& transaction : loadResult.transactions) {
@@ -68,16 +73,14 @@ int main() {
             // Display loading summary
             std::cout << loadResult.getSummary() << "\n";
 
-            // If there were parsing errors, show a detailed report
+            // Display appropriate message based on loading results
             if (loadResult.hasErrors()) {
-                std::cout << "\nWARNING: Some transactions could not be loaded.\n";
-                std::cout << "Would you like to see the error details? (y/n): ";
-                std::string response;
-                std::getline(std::cin, response);
-
-                if (!response.empty() && (response[0] == 'y' || response[0] == 'Y')) {
-                    std::cout << "\n" << loadResult.getErrorReport() << "\n";
-                }
+                std::cout << "Note: " << loadResult.getErrorCount()
+                    << " lines were skipped due to validation errors.\n";
+                std::cout << "These errors have been logged above.\n";
+            }
+            else {
+                std::cout << "All transactions loaded successfully with no validation errors.\n";
             }
         }
         else {
@@ -89,7 +92,7 @@ int main() {
         }
     }
     catch (const std::exception& e) {
-        std::cerr << "Error loading transactions: " << e.what() << std::endl;
+        std::cerr << "Fatal error loading transactions: " << e.what() << std::endl;
         std::cerr << "Starting with empty transaction list.\n";
     }
 

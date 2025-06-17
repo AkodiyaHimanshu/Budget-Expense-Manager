@@ -51,7 +51,8 @@ void Transaction::setType(TransactionType type) {
 std::string Transaction::getFormattedDate() const {
     struct tm* timeinfo = localtime(&date);
     std::ostringstream oss;
-    oss << std::put_time(timeinfo, "%Y-%m-%d %H:%M:%S");
+    // Using ISO-8601 format (YYYY-MM-DDThh:mm:ss) for better compatibility with spreadsheets and parsers
+    oss << std::put_time(timeinfo, "%Y-%m-%dT%H:%M:%S");
     return oss.str();
 }
 

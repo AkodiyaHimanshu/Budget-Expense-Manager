@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 
+
 void TransactionManager::addTransaction(std::shared_ptr<Transaction> transaction) {
     transactions.push_back(transaction);
 
@@ -168,4 +169,73 @@ const std::map<std::string, MonthlySummary>& TransactionManager::getMonthlyTrans
     }
 
     return monthlySummaryCache;
+}
+
+// Implementation of exportTransactionsToCSV
+bool TransactionManager::exportTransactionsToCSV(const std::string& filename) const {
+    try {
+        // Create a filesystem path object from the filename
+        std::filesystem::path filepath(filename);
+
+        // Get parent directory path
+        std::filesystem::path dir = filepath.parent_path();
+
+        // Create directories if they don't exist
+        if (!dir.empty()) {
+            std::error_code ec;
+            if (!std::filesystem::create_directories(dir, ec)) {
+                // If directory creation failed and it's not because the directory already exists
+                if (ec && !std::filesystem::exists(dir)) {
+                    std::stringstream err;
+                    err << "Failed to create directory " << dir.string() << ": " << ec.message();
+                    throw std::runtime_error(err.str());
+                }
+            }
+        }
+
+        // Check if the file exists and has content
+        bool fileExistsWithContent = false;
+        std::error_code ec;
+        if (std::filesystem::exists(filepath, ec) && !ec) {
+            // Check if file has content (size > 0)
+            auto fileSize = std::filesystem::file_size(filepath, ec);
+            if (!ec && fileSize > 0) {
+                fileExistsWithContent = true;
+            }
+        }
+
+        // Open the file in append mode if it already has content
+        std::ofstream file;
+        if (fileExistsWithContent) {
+            file.open(filename, std::ios::app);
+        }
+        else {
+            file.open(filename);
+        }
+
+        if (!file.is_open()) {
+            throw std::runtime_error("Could not open file for writing: " + filename);
+        }
+
+        // Write CSV header only if this is a new file
+        if (!fileExistsWithContent) {
+            file << "Date,Type,Amount,Category" << std::endl;
+        }
+
+        // Write each transaction as a CSV row
+        for (const auto& transaction : transactions) {
+            file << transaction->getFormattedDate() << ","
+                << transaction->getTypeAsString() << ","
+                << std::fixed << std::setprecision(2) << transaction->getAmount() << ","
+                << "\"" << transaction->getCategory() << "\"" << std::endl;  // Quote category to handle commas in names
+        }
+
+        file.close();
+        return true;
+    }
+    catch (const std::exception& e) {
+        // Store the error message for later retrieval
+        lastErrorMessage = e.what();
+        return false;
+    }
 }

@@ -12,10 +12,19 @@ endif()
 project ("Budget-Expense-Manager")
 
 # Add source to this project's executable.
-add_executable (Budget-Expense-Manager "src/main.cpp" "include/main.h" "include/models/Transaction.h" "src/models/Transaction.cpp" "include/services/TransactionManager.h" "src/services/TransactionManager.cpp" "include/ui/TransactionInput.h" "src/ui/TransactionInput.cpp" "include/services/CategoryManager.h" "src/services/CategoryManager.cpp" "include/ui/CategoryManagementUI.h" "src/ui/CategoryManagementUI.cpp" "include/utils/DateUtils.h")
+add_executable (Budget-Expense-Manager "src/main.cpp" "include/main.h" "include/models/Transaction.h" "src/models/Transaction.cpp" "include/services/TransactionManager.h" "src/services/TransactionManager.cpp" "include/ui/TransactionInput.h" "src/ui/TransactionInput.cpp" "include/services/CategoryManager.h" "src/services/CategoryManager.cpp" "include/ui/CategoryManagementUI.h" "src/ui/CategoryManagementUI.cpp" "include/utils/DateUtils.h" "include/utils/FileUtils.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Budget-Expense-Manager PROPERTY CXX_STANDARD 20)
 endif()
 
-# TODO: Add tests and install targets if needed.
+# Source files
+set(SOURCES
+    src/main.cpp
+    src/models/Transaction.cpp
+    src/services/TransactionManager.cpp
+    src/services/CategoryManager.cpp
+    src/ui/TransactionInput.cpp
+    src/ui/CategoryManagementUI.cpp
+    # Note: FileUtils is header-only, so no .cpp file is needed
+)

@@ -1,10 +1,13 @@
 ﻿#include <iostream>
 #include <memory>
+#include <chrono>
+#include <ctime>
 #include "../include/models/Transaction.h"
 #include "../include/services/TransactionManager.h"
 #include "../include/services/CategoryManager.h"
 #include "../include/ui/TransactionInput.h"
 #include "../include/ui/CategoryManagementUI.h"
+#include "../include/utils/FileUtils.h"  // Include FileUtils header for CSV operations
 
 void displayMenu() {
     std::cout << "\n===== Budget & Expense Manager =====\n";
@@ -47,6 +50,52 @@ int main() {
     TransactionInput inputHandler(transactionManager, categoryManager);
     CategoryManagementUI categoryUI(categoryManager);
 
+    // Define the path to the transactions CSV file
+    const std::string transactionsFilePath = "data/transactions/transactions.csv";
+
+    // Load transactions from file on startup if the file exists
+    try {
+        // Check if the file exists before attempting to load
+        if (fs::exists(transactionsFilePath)) {
+            std::cout << "Loading transactions from " << transactionsFilePath << "...\n";
+            std::cout << "-----------------------------------------------------\n";
+
+            // Load and validate transactions (errors are logged directly to console)
+            auto loadResult = FileUtils::loadTransactionsFromCSV(transactionsFilePath);
+
+            std::cout << "-----------------------------------------------------\n";
+
+            // Add each successfully parsed transaction to the transaction manager
+            for (const auto& transaction : loadResult.transactions) {
+                transactionManager.addTransaction(transaction);
+            }
+
+            // Display loading summary
+            std::cout << loadResult.getSummary() << "\n";
+
+            // Display appropriate message based on loading results
+            if (loadResult.hasErrors()) {
+                std::cout << "Note: " << loadResult.getErrorCount()
+                    << " lines were skipped due to validation errors.\n";
+                std::cout << "These errors have been logged above.\n";
+            }
+            else {
+                std::cout << "All transactions loaded successfully with no validation errors.\n";
+            }
+        }
+        else {
+            std::cout << "No transactions file found at " << transactionsFilePath << ". Starting with empty transaction list.\n";
+
+            // Ensure the directory exists for future saves
+            fs::path path(transactionsFilePath);
+            fs::create_directories(path.parent_path());
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Fatal error loading transactions: " << e.what() << std::endl;
+        std::cerr << "Starting with empty transaction list.\n";
+    }
+
     int choice = -1;
 
     while (choice != 0) {
@@ -83,6 +132,19 @@ int main() {
 
         switch (choice) {
         case 0:
+            // Save transactions to file before exiting
+            try {
+                std::cout << "Saving transactions to " << transactionsFilePath << "...\n";
+                int savedCount = FileUtils::saveTransactionsToCSV(
+                    transactionManager.getAllTransactions(),
+                    transactionsFilePath
+                );
+                std::cout << "Successfully saved " << savedCount << " transactions.\n";
+            }
+            catch (const std::exception& e) {
+                std::cerr << "Error saving transactions: " << e.what() << std::endl;
+            }
+
             std::cout << "Exiting application. Goodbye!\n";
             break;
         case 1:

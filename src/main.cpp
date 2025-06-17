@@ -102,7 +102,8 @@ int main() {
                 std::cout << "Transactions successfully saved to " << filename << std::endl;
             }
             else {
-                std::cout << "Error: Could not save transactions to file." << std::endl;
+                std::cout << "Error: Failed to save transactions to file." << std::endl;
+                std::cout << "Reason: " << transactionManager.getLastErrorMessage() << std::endl;
             }
 
             std::cout << "Exiting. Thank you for using Budget & Expense Manager!\n";

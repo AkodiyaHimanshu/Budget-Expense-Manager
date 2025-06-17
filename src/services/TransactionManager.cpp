@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 
+
 void TransactionManager::addTransaction(std::shared_ptr<Transaction> transaction) {
     transactions.push_back(transaction);
 
@@ -173,9 +174,29 @@ const std::map<std::string, MonthlySummary>& TransactionManager::getMonthlyTrans
 // Implementation of exportTransactionsToCSV
 bool TransactionManager::exportTransactionsToCSV(const std::string& filename) const {
     try {
+        // Create a filesystem path object from the filename
+        std::filesystem::path filepath(filename);
+
+        // Get parent directory path
+        std::filesystem::path dir = filepath.parent_path();
+
+        // Create directories if they don't exist
+        if (!dir.empty()) {
+            std::error_code ec;
+            if (!std::filesystem::create_directories(dir, ec)) {
+                // If directory creation failed and it's not because the directory already exists
+                if (ec && !std::filesystem::exists(dir)) {
+                    std::stringstream err;
+                    err << "Failed to create directory " << dir.string() << ": " << ec.message();
+                    throw std::runtime_error(err.str());
+                }
+            }
+        }
+
+        // Now open the file
         std::ofstream file(filename);
         if (!file.is_open()) {
-            return false;
+            throw std::runtime_error("Could not open file for writing: " + filename);
         }
 
         // Write CSV header
@@ -193,7 +214,8 @@ bool TransactionManager::exportTransactionsToCSV(const std::string& filename) co
         return true;
     }
     catch (const std::exception& e) {
-        // Handle any exceptions during file operations
+        // Store the error message for later retrieval
+        lastErrorMessage = e.what();
         return false;
     }
 }

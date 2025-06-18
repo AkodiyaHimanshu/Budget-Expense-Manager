@@ -295,7 +295,7 @@ int main() {
                     categoryUI.removeCustomCategory();
                     break;
                 default:
-                    std::cout << "Invalid choice. Please try again (0-6).\n";
+                    std::cout << "Invalid choice. Please try again.\n";
                     // Clear input buffer
                     std::cin.clear();
                     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -303,8 +303,71 @@ int main() {
             }
             break;
         }
+        case 2: // Transactions
+        {
+            auto transactionManager = std::make_shared<TransactionManager>();
+            TransactionUI transactionUI(transactionManager);
+
+            int transactionChoice = -1;
+            while (transactionChoice != 0) {
+                transactionUI.displayTransactionsMenu();
+
+                // Input handling with improved error detection
+                std::string input;
+                std::getline(std::cin, input);
+
+                // Handle empty input
+                if (input.empty()) {
+                    std::cout << "Error: Please enter a choice from the menu.\n";
+                    continue;
+                }
+
+                try {
+                    // Try to convert input to integer
+                    transactionChoice = std::stoi(input);
+                }
+                catch (const std::invalid_argument&) {
+                    std::cout << "Error: '" << input << "' is not a valid number. Please try again.\n";
+                    continue;
+                }
+                catch (const std::out_of_range&) {
+                    std::cout << "Error: The number you entered is too large. Please try again.\n";
+                    continue;
+                }
+
+                switch (transactionChoice) {
+                case 0:
+                    std::cout << "Returning to main menu...\n";
+                    break;
+                case 1:
+                    transactionUI.showAllTransactions();
+                    break;
+                case 2:
+                    transactionUI.showTransactionsByCategory();
+                    break;
+                case 3:
+                    transactionUI.showTransactionsByType();
+                    break;
+                case 4:
+                    transactionUI.showTransactionsByDateRange();
+                    break;
+                case 5:
+                    transactionUI.showTransactionsByMonth();
+                    break;
+                case 6:
+                    transactionUI.showMonthlySummary();
+                    break;
+                case 7:
+                    transactionUI.addNewTransaction();
+                    break;
+                default:
+                    std::cout << "Invalid choice. Please try again (0-7).\n";
+                }
+            }
+            break;
+        }
         default:
-            std::cout << "Invalid choice. Please try again.\n";
+            std::cout << "Invalid choice. Please try again (0-6).\n";
             // Clear input buffer
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

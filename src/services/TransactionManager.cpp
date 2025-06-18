@@ -1,241 +1,224 @@
 #include "../../include/services/TransactionManager.h"
-#include "../../include/utils/DateUtils.h"
-#include <algorithm>
-#include <ctime>
+#include "../../include/utils/FileUtils.h"
+#include <fstream>
 #include <sstream>
-#include <iomanip>
+#include <iostream>
+#include <algorithm>
+#include <numeric>
 
+TransactionManager::TransactionManager() {
+    loadTransactions();
+}
 
-void TransactionManager::addTransaction(std::shared_ptr<Transaction> transaction) {
+TransactionManager::~TransactionManager() {
+    saveTransactions();
+}
+
+void TransactionManager::addTransaction(const std::shared_ptr<Transaction>& transaction) {
     transactions.push_back(transaction);
-
-    // Get the month of the new transaction
-    std::string monthKey = transaction->getMonthKey();
-
-    // Invalidate specific caches
-
-    // 1. Remove the monthly transactions cache entry for this month
-    monthlyTransactionsCache.erase(monthKey);
-
-    // 2. Remove the monthly summary cache entry for this month
-    monthlySummaryCache.erase(monthKey);
-
-    // 3. Mark overall cache as invalid since total summaries would change
-    cacheValid = false;
 }
 
-const std::vector<std::shared_ptr<Transaction>>& TransactionManager::getAllTransactions() const {
+std::vector<std::shared_ptr<Transaction>> TransactionManager::getAllTransactions() const {
     return transactions;
-}
-
-std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByType(TransactionType type) const {
-    std::vector<std::shared_ptr<Transaction>> result;
-    std::copy_if(transactions.begin(), transactions.end(), std::back_inserter(result),
-        [type](const std::shared_ptr<Transaction>& t) { return t->getType() == type; });
-    return result;
 }
 
 std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByCategory(const std::string& category) const {
     std::vector<std::shared_ptr<Transaction>> result;
-    std::copy_if(transactions.begin(), transactions.end(), std::back_inserter(result),
-        [&category](const std::shared_ptr<Transaction>& t) { return t->getCategory() == category; });
+
+    // Lambda function to check if transaction matches the category
+    auto matchesCategory = [&category](const std::shared_ptr<Transaction>& t) {
+        return t->getCategory() == category;
+        };
+
+    // Copy transactions that match the category to the result vector
+    std::copy_if(transactions.begin(), transactions.end(),
+        std::back_inserter(result), matchesCategory);
+
     return result;
 }
 
-double TransactionManager::calculateTotal(TransactionType type) const {
-    double total = 0.0;
-    for (const auto& transaction : transactions) {
-        if (transaction->getType() == type) {
-            total += transaction->getAmount();
-        }
-    }
-    return total;
+std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByType(TransactionType type) const {
+    std::vector<std::shared_ptr<Transaction>> result;
+
+    // Lambda function to check if transaction matches the type
+    auto matchesType = [&type](const std::shared_ptr<Transaction>& t) {
+        return t->getType() == type;
+        };
+
+    // Copy transactions that match the type to the result vector
+    std::copy_if(transactions.begin(), transactions.end(),
+        std::back_inserter(result), matchesType);
+
+    return result;
 }
 
-// Calculate net amount (income - expenses) across all transactions
-double TransactionManager::calculateNetTotal() const {
-    double totalIncome = calculateTotal(TransactionType::INCOME);
-    double totalExpenses = calculateTotal(TransactionType::EXPENSE);
-    return calculateNetAmount(totalIncome, totalExpenses);
+std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByDateRange(time_t startDate, time_t endDate) const {
+    std::vector<std::shared_ptr<Transaction>> result;
+
+    // Lambda function to check if transaction's date is within the range (inclusive)
+    auto isInDateRange = [startDate, endDate](const std::shared_ptr<Transaction>& t) {
+        return DateUtils::isDateInRange(t->getDate(), startDate, endDate);
+        };
+
+    // Copy transactions that are within the date range to the result vector
+    std::copy_if(transactions.begin(), transactions.end(),
+        std::back_inserter(result), isInDateRange);
+
+    return result;
 }
 
-// Get transactions for a specific month (format: YYYY-MM)
-std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByMonth(const std::string& yearMonth) const {
-    // Validate the year-month format using the utility function
-    DateUtils::validateYearMonth(yearMonth);
-
-    // Make sure cache is valid
-    validateCache();
-
-    // Check if we have a cached result for this month
-    auto cacheIt = monthlyTransactionsCache.find(yearMonth);
-    if (cacheIt != monthlyTransactionsCache.end()) {
-        // Cache hit - return the cached result
-        return cacheIt->second;
-    }
-
-    // Cache miss - compute the result and cache it
-    std::vector<std::shared_ptr<Transaction>> monthlyTransactions;
+std::map<std::string, std::vector<std::shared_ptr<Transaction>>> TransactionManager::getTransactionsByMonth() const {
+    std::map<std::string, std::vector<std::shared_ptr<Transaction>>> monthlyTransactions;
 
     for (const auto& transaction : transactions) {
-        // Get the cached month key and compare directly with the input yearMonth
-        if (transaction->getMonthKey() == yearMonth) {
-            monthlyTransactions.push_back(transaction);
-        }
-    }
+        // Get month key in YYYY-MM format
+        std::string monthKey = transaction->getMonthKey();
 
-    // Store in cache for future requests
-    monthlyTransactionsCache[yearMonth] = monthlyTransactions;
+        // Add transaction to the appropriate month's vector
+        monthlyTransactions[monthKey].push_back(transaction);
+    }
 
     return monthlyTransactions;
 }
 
-// Calculate monthly summary for a specific month (format: YYYY-MM)
-MonthlySummary TransactionManager::calculateMonthlySummary(const std::string& yearMonth) const {
-    // Validate the year-month format using the utility function
-    DateUtils::validateYearMonth(yearMonth);
+std::map<std::string, std::tuple<double, double, double>> TransactionManager::calculateMonthlySummary() const {
+    std::map<std::string, std::tuple<double, double, double>> summary;
 
-    // Make sure cache is valid
-    validateCache();
+    // Get transactions grouped by month
+    auto monthlyTransactions = getTransactionsByMonth();
 
-    // Check if we have a cached result for this month
-    auto cacheIt = monthlySummaryCache.find(yearMonth);
-    if (cacheIt != monthlySummaryCache.end()) {
-        // Cache hit - return the cached result
-        return cacheIt->second;
-    }
+    // Process each month
+    for (const auto& [month, transactionList] : monthlyTransactions) {
+        double totalIncome = 0.0;
+        double totalExpenses = 0.0;
 
-    // Cache miss - compute the result
-    MonthlySummary summary = { 0.0, 0.0, 0.0 }; // Initialize with zeros
-
-    // Get all transactions for the specified month (this also populates monthlyTransactionsCache)
-    auto monthlyTransactions = getTransactionsByMonth(yearMonth);
-
-    // Calculate income and expenses
-    for (const auto& transaction : monthlyTransactions) {
-        if (transaction->getType() == TransactionType::INCOME) {
-            summary.totalIncome += transaction->getAmount();
+        // Calculate total income and expenses for the month
+        for (const auto& transaction : transactionList) {
+            if (transaction->getType() == TransactionType::INCOME) {
+                totalIncome += transaction->getAmount();
+            }
+            else {
+                totalExpenses += transaction->getAmount();
+            }
         }
-        else {
-            summary.totalExpenses += transaction->getAmount();
-        }
+
+        // Calculate net amount (income - expenses)
+        double netAmount = totalIncome - totalExpenses;
+
+        // Store the summary for this month
+        summary[month] = std::make_tuple(totalIncome, totalExpenses, netAmount);
     }
-
-    // Calculate net amount using the dedicated method
-    summary.updateNetAmount();
-
-    // Store in cache for future requests
-    monthlySummaryCache[yearMonth] = summary;
 
     return summary;
 }
 
-// Group transactions by month and return monthly summaries
-// Returns a const reference to avoid copying the entire map
-const std::map<std::string, MonthlySummary>& TransactionManager::getMonthlyTransactionSummaries() const {
-    // Make sure cache is valid
-    validateCache();
-
-    // If the cache already has data, we can return it directly
-    if (!monthlySummaryCache.empty()) {
-        return monthlySummaryCache;
-    }
-
-    // We'll update the cache directly instead of creating a temporary map
-    // This avoids an unnecessary copy when returning the result
-
-    // First, aggregate all income and expenses by month
-    for (const auto& transaction : transactions) {
-        // Get the cached month key (YYYY-MM) from the transaction
-        std::string monthKey = transaction->getMonthKey();
-
-        // Create month entry in cache if it doesn't exist
-        if (monthlySummaryCache.find(monthKey) == monthlySummaryCache.end()) {
-            monthlySummaryCache[monthKey] = { 0.0, 0.0, 0.0 };
-        }
-
-        // Update the monthly income or expense total directly in the cache
-        if (transaction->getType() == TransactionType::INCOME) {
-            monthlySummaryCache[monthKey].totalIncome += transaction->getAmount();
-        }
-        else {
-            monthlySummaryCache[monthKey].totalExpenses += transaction->getAmount();
-        }
-    }
-
-    // Now calculate all net amounts in a separate pass using the dedicated method
-    for (auto& [month, summary] : monthlySummaryCache) {
-        summary.updateNetAmount();
-    }
-
-    return monthlySummaryCache;
+void TransactionManager::saveTransactions() {
+    saveTransactionsToFile("data/transactions.csv");
 }
 
-// Implementation of exportTransactionsToCSV
-bool TransactionManager::exportTransactionsToCSV(const std::string& filename) const {
+void TransactionManager::loadTransactions() {
+    loadTransactionsFromFile("data/transactions.csv");
+}
+
+bool TransactionManager::saveTransactionsToFile(const std::string& filename) const {
     try {
-        // Create a filesystem path object from the filename
-        std::filesystem::path filepath(filename);
+        // Make sure the data directory exists
+        FileUtils::createDirectoryIfNotExists("data");
 
-        // Get parent directory path
-        std::filesystem::path dir = filepath.parent_path();
-
-        // Create directories if they don't exist
-        if (!dir.empty()) {
-            std::error_code ec;
-            if (!std::filesystem::create_directories(dir, ec)) {
-                // If directory creation failed and it's not because the directory already exists
-                if (ec && !std::filesystem::exists(dir)) {
-                    std::stringstream err;
-                    err << "Failed to create directory " << dir.string() << ": " << ec.message();
-                    throw std::runtime_error(err.str());
-                }
-            }
-        }
-
-        // Check if the file exists and has content
-        bool fileExistsWithContent = false;
-        std::error_code ec;
-        if (std::filesystem::exists(filepath, ec) && !ec) {
-            // Check if file has content (size > 0)
-            auto fileSize = std::filesystem::file_size(filepath, ec);
-            if (!ec && fileSize > 0) {
-                fileExistsWithContent = true;
-            }
-        }
-
-        // Open the file in append mode if it already has content
-        std::ofstream file;
-        if (fileExistsWithContent) {
-            file.open(filename, std::ios::app);
-        }
-        else {
-            file.open(filename);
-        }
-
+        // Open the file for writing
+        std::ofstream file(filename);
         if (!file.is_open()) {
-            throw std::runtime_error("Could not open file for writing: " + filename);
+            std::cerr << "Error: Could not open file " << filename << " for writing" << std::endl;
+            return false;
         }
 
-        // Write CSV header only if this is a new file
-        if (!fileExistsWithContent) {
-            file << "Date,Type,Amount,Category" << std::endl;
-        }
+        // Write header
+        file << "Amount,Date,Category,Type\n";
 
-        // Write each transaction as a CSV row
+        // Write each transaction
         for (const auto& transaction : transactions) {
-            file << transaction->getFormattedDate() << ","
-                << transaction->getTypeAsString() << ","
-                << std::fixed << std::setprecision(2) << transaction->getAmount() << ","
-                << "\"" << transaction->getCategory() << "\"" << std::endl;  // Quote category to handle commas in names
+            file << transaction->getAmount() << ","
+                << transaction->getDate() << ","
+                << transaction->getCategory() << ","
+                << (transaction->getType() == TransactionType::INCOME ? "INCOME" : "EXPENSE")
+                << "\n";
         }
 
         file.close();
         return true;
     }
     catch (const std::exception& e) {
-        // Store the error message for later retrieval
-        lastErrorMessage = e.what();
+        std::cerr << "Error saving transactions: " << e.what() << std::endl;
         return false;
     }
+}
+
+bool TransactionManager::loadTransactionsFromFile(const std::string& filename) {
+    try {
+        // Clear existing transactions
+        transactions.clear();
+
+        // Check if the file exists
+        if (!FileUtils::fileExists(filename)) {
+            // It's okay if the file doesn't exist yet
+            return true;
+        }
+
+        // Open the file for reading
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Error: Could not open file " << filename << " for reading" << std::endl;
+            return false;
+        }
+
+        // Skip header line
+        std::string line;
+        std::getline(file, line);
+
+        // Read each transaction line
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string amountStr, dateStr, category, typeStr;
+
+            // Parse CSV values
+            std::getline(iss, amountStr, ',');
+            std::getline(iss, dateStr, ',');
+            std::getline(iss, category, ',');
+            std::getline(iss, typeStr, ',');
+
+            // Convert to appropriate types
+            double amount = std::stod(amountStr);
+            time_t date = std::stoll(dateStr);
+            TransactionType type = (typeStr == "INCOME") ? TransactionType::INCOME : TransactionType::EXPENSE;
+
+            // Create and add the transaction
+            auto transaction = std::make_shared<Transaction>(amount, date, category, type);
+            transactions.push_back(transaction);
+        }
+
+        file.close();
+        return true;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error loading transactions: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+double TransactionManager::getTotalIncome() const {
+    return std::accumulate(transactions.begin(), transactions.end(), 0.0,
+        [](double sum, const std::shared_ptr<Transaction>& t) {
+            return sum + (t->getType() == TransactionType::INCOME ? t->getAmount() : 0.0);
+        });
+}
+
+double TransactionManager::getTotalExpenses() const {
+    return std::accumulate(transactions.begin(), transactions.end(), 0.0,
+        [](double sum, const std::shared_ptr<Transaction>& t) {
+            return sum + (t->getType() == TransactionType::EXPENSE ? t->getAmount() : 0.0);
+        });
+}
+
+double TransactionManager::getNetAmount() const {
+    return getTotalIncome() - getTotalExpenses();
 }

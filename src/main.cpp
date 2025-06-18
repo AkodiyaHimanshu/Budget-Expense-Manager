@@ -1,48 +1,37 @@
 ﻿#include <iostream>
+#include <string>
+#include <vector>
 #include <memory>
+#include <limits>
+#include <filesystem>
 #include <chrono>
-#include <ctime>
+#include <iomanip>
+
+// Project includes
 #include "../include/models/Transaction.h"
 #include "../include/services/TransactionManager.h"
 #include "../include/services/CategoryManager.h"
 #include "../include/ui/TransactionInput.h"
 #include "../include/ui/CategoryManagementUI.h"
-#include "../include/utils/FileUtils.h"  // Include FileUtils header for CSV operations
+#include "../include/ui/TransactionUI.h"  // Added for TransactionUI
+#include "../include/utils/FileUtils.h"
+#include "../include/utils/DateUtils.h"
 
-void displayMenu() {
-    std::cout << "\n===== Budget & Expense Manager =====\n";
-    std::cout << "What would you like to do?\n\n";
-    std::cout << "1. Record New Income\n";
-    std::cout << "2. Record New Expense\n";
-    std::cout << "3. View Transactions\n";
-    std::cout << "4. View Financial Summary\n";
-    std::cout << "5. View Monthly Analysis\n";
-    std::cout << "6. Manage Categories\n";
-    std::cout << "0. Exit Application\n\n";
-    std::cout << "Please enter your choice (0-6): ";
-}
+// Namespace aliases
+namespace fs = std::filesystem;
 
-void displayTransactionViewMenu() {
-    std::cout << "\n=== View Transactions ===\n";
-    std::cout << "1. View All Transactions\n";
-    std::cout << "2. View Transactions by Category\n";
-    std::cout << "3. View Transactions by Type (Income/Expense)\n";
-    std::cout << "0. Return to Main Menu\n\n";
-    std::cout << "Please enter your choice (0-3): ";
-}
-
-void displayMonthlyAnalysisMenu() {
-    std::cout << "\n=== Monthly Analysis ===\n";
-    std::cout << "1. View Transactions for a Specific Month\n";
-    std::cout << "2. View Summary for a Specific Month\n";
-    std::cout << "3. View All Monthly Summaries\n";
-    std::cout << "0. Return to Main Menu\n\n";
-    std::cout << "Please enter your choice (0-3): ";
-}
-
+// Function prototypes
+void displayMenu();
+void displayTransactionViewMenu();
+void displayMonthlyAnalysisMenu();
 
 int main() {
-    // Create our service managers
+    std::cout << "================================================\n";
+    std::cout << "    BUDGET & EXPENSE MANAGER - VERSION 1.0\n";
+    std::cout << "================================================\n";
+    std::cout << "Welcome to your personal finance management tool!\n\n";
+
+    // Initialize managers
     TransactionManager transactionManager;
     CategoryManager categoryManager;
 
@@ -60,18 +49,25 @@ int main() {
             std::cout << "Loading transactions from " << transactionsFilePath << "...\n";
             std::cout << "-----------------------------------------------------\n";
 
+            auto startTime = std::chrono::high_resolution_clock::now();
+
             // Load and validate transactions (errors are logged directly to console)
             auto loadResult = FileUtils::loadTransactionsFromCSV(transactionsFilePath);
 
-            std::cout << "-----------------------------------------------------\n";
-
             // Add each successfully parsed transaction to the transaction manager
+            // Using reserve to optimize this loop as well
+            transactionManager.reserveCapacity(loadResult.transactions.size());
             for (const auto& transaction : loadResult.transactions) {
                 transactionManager.addTransaction(transaction);
             }
 
-            // Display loading summary
-            std::cout << loadResult.getSummary() << "\n";
+            auto endTime = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
+            std::cout << "-----------------------------------------------------\n";
+
+            // Display loading summary with timing information
+            std::cout << "Loading complete in " << duration << "ms. " << loadResult.getSummary() << "\n";
 
             // Display appropriate message based on loading results
             if (loadResult.hasErrors()) {
@@ -116,8 +112,8 @@ int main() {
             choice = std::stoi(input);
 
             // Validate choice range
-            if (choice < 0 || choice > 6) {
-                std::cout << "Error: Please enter a choice between 0 and 6.\n";
+            if (choice < 0 || choice > 7) {
+                std::cout << "Error: Please enter a choice between 0 and 7.\n";
                 continue;
             }
         }
@@ -134,15 +130,30 @@ int main() {
         case 0:
             // Save transactions to file before exiting
             try {
-                std::cout << "Saving transactions to " << transactionsFilePath << "...\n";
-                int savedCount = FileUtils::saveTransactionsToCSV(
-                    transactionManager.getAllTransactions(),
-                    transactionsFilePath
-                );
-                std::cout << "Successfully saved " << savedCount << " transactions.\n";
+                // Measure save performance
+                auto startTime = std::chrono::high_resolution_clock::now();
+
+                // Get all transactions and reserve space in a vector to avoid reallocations
+                auto transactions = transactionManager.getAllTransactions();
+                std::cout << "Saving " << transactions.size() << " transactions to "
+                    << transactionsFilePath << "...\n";
+
+                int savedCount = FileUtils::saveTransactionsToCSV(transactions, transactionsFilePath);
+
+                auto endTime = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
+                std::cout << "Successfully saved " << savedCount << " transactions in "
+                    << duration << "ms.\n";
+
+                if (savedCount != static_cast<int>(transactions.size())) {
+                    std::cout << "Warning: Only " << savedCount << " of "
+                        << transactions.size() << " transactions were saved.\n";
+                }
             }
             catch (const std::exception& e) {
                 std::cerr << "Error saving transactions: " << e.what() << std::endl;
+                std::cerr << "Your transactions may not have been saved properly.\n";
             }
 
             std::cout << "Exiting application. Goodbye!\n";
@@ -155,27 +166,26 @@ int main() {
             break;
         case 3:
         {
-            // Transactions submenu
-            int transactionChoice = -1;
-            while (transactionChoice != 0) {
+            // Transaction view submenu
+            int viewChoice = -1;
+            while (viewChoice != 0) {
                 displayTransactionViewMenu();
 
-                // Improved input handling for transactions menu
+                // Get user input with exception handling
                 std::string input;
                 std::getline(std::cin, input);
 
                 // Handle empty input
                 if (input.empty()) {
-                    std::cout << "Please select how you'd like to view your transactions.\n";
+                    std::cout << "Please select an option from the menu.\n";
                     continue;
                 }
 
                 try {
                     // Try to convert input to integer
-                    transactionChoice = std::stoi(input);
+                    viewChoice = std::stoi(input);
 
-                    // Process user's choice
-                    switch (transactionChoice) {
+                    switch (viewChoice) {
                     case 0:
                         std::cout << "Returning to main menu...\n";
                         break;
@@ -189,11 +199,11 @@ int main() {
                         inputHandler.displayTransactionsByType();
                         break;
                     default:
-                        std::cout << "Sorry, that's not a valid option. Please enter a number between 0 and 3.\n";
+                        std::cout << "Sorry, that's not a valid option. Please choose between 0 and 3.\n";
                     }
                 }
                 catch (const std::invalid_argument&) {
-                    std::cout << "Sorry, '" << input << "' isn't a valid option. Please choose from the available options.\n";
+                    std::cout << "Sorry, '" << input << "' isn't a valid option. Please choose a number from the menu.\n";
                 }
                 catch (const std::out_of_range&) {
                     std::cout << "That number is too large. Please enter a number between 0 and 3.\n";
@@ -303,7 +313,7 @@ int main() {
             }
             break;
         }
-        case 2: // Transactions
+        case 7: // Transactions (new date range filtering)
         {
             auto transactionManager = std::make_shared<TransactionManager>();
             TransactionUI transactionUI(transactionManager);
@@ -367,7 +377,7 @@ int main() {
             break;
         }
         default:
-            std::cout << "Invalid choice. Please try again (0-6).\n";
+            std::cout << "Invalid choice. Please try again (0-7).\n";
             // Clear input buffer
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -375,4 +385,35 @@ int main() {
     }
 
     return 0;
+}
+
+void displayMenu() {
+    std::cout << "\n===== Budget & Expense Manager Menu =====\n";
+    std::cout << "1. Add Income Transaction\n";
+    std::cout << "2. Add Expense Transaction\n";
+    std::cout << "3. View Transactions\n";
+    std::cout << "4. View Financial Summary\n";
+    std::cout << "5. Monthly Analysis\n";
+    std::cout << "6. Manage Categories\n";
+    std::cout << "7. Advanced Transactions (with Date Range Filtering)\n";  // Added option
+    std::cout << "0. Exit\n";
+    std::cout << "Enter your choice (0-7): ";  // Updated range
+}
+
+void displayTransactionViewMenu() {
+    std::cout << "\n===== View Transactions =====\n";
+    std::cout << "1. All Transactions\n";
+    std::cout << "2. Transactions by Category\n";
+    std::cout << "3. Transactions by Type\n";
+    std::cout << "0. Back to Main Menu\n";
+    std::cout << "Enter your choice (0-3): ";
+}
+
+void displayMonthlyAnalysisMenu() {
+    std::cout << "\n===== Monthly Analysis =====\n";
+    std::cout << "1. View Transactions by Month\n";
+    std::cout << "2. View Monthly Summary\n";
+    std::cout << "3. View All Monthly Summaries\n";
+    std::cout << "0. Back to Main Menu\n";
+    std::cout << "Enter your choice (0-3): ";
 }

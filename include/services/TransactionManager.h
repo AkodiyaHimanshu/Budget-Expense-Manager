@@ -14,15 +14,14 @@ class TransactionManager {
 private:
     std::vector<std::shared_ptr<Transaction>> transactions;
 
-    // Helper method to save transactions to file
-    bool saveTransactionsToFile(const std::string& filename) const;
-
-    // Helper method to load transactions from file
-    bool loadTransactionsFromFile(const std::string& filename);
-
 public:
     TransactionManager();
     ~TransactionManager();
+
+    // Reserve capacity for transactions (optimization)
+    void reserveCapacity(size_t capacity) {
+        transactions.reserve(capacity);
+    }
 
     // Add a new transaction
     void addTransaction(const std::shared_ptr<Transaction>& transaction);

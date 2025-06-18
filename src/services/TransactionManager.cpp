@@ -113,95 +113,41 @@ std::map<std::string, std::tuple<double, double, double>> TransactionManager::ca
 }
 
 void TransactionManager::saveTransactions() {
-    saveTransactionsToFile("data/transactions.csv");
-}
-
-void TransactionManager::loadTransactions() {
-    loadTransactionsFromFile("data/transactions.csv");
-}
-
-bool TransactionManager::saveTransactionsToFile(const std::string& filename) const {
     try {
-        // Make sure the data directory exists
-        FileUtils::createDirectoryIfNotExists("data");
-
-        // Open the file for writing
-        std::ofstream file(filename);
-        if (!file.is_open()) {
-            std::cerr << "Error: Could not open file " << filename << " for writing" << std::endl;
-            return false;
-        }
-
-        // Write header
-        file << "Amount,Date,Category,Type\n";
-
-        // Write each transaction
-        for (const auto& transaction : transactions) {
-            file << transaction->getAmount() << ","
-                << transaction->getDate() << ","
-                << transaction->getCategory() << ","
-                << (transaction->getType() == TransactionType::INCOME ? "INCOME" : "EXPENSE")
-                << "\n";
-        }
-
-        file.close();
-        return true;
+        const std::string filename = "data/transactions.csv";
+        FileUtils::saveTransactionsToCSV(transactions, filename);
     }
     catch (const std::exception& e) {
         std::cerr << "Error saving transactions: " << e.what() << std::endl;
-        return false;
     }
 }
 
-bool TransactionManager::loadTransactionsFromFile(const std::string& filename) {
+void TransactionManager::loadTransactions() {
     try {
+        const std::string filename = "data/transactions.csv";
+
         // Clear existing transactions
         transactions.clear();
 
         // Check if the file exists
         if (!FileUtils::fileExists(filename)) {
             // It's okay if the file doesn't exist yet
-            return true;
+            return;
         }
 
-        // Open the file for reading
-        std::ifstream file(filename);
-        if (!file.is_open()) {
-            std::cerr << "Error: Could not open file " << filename << " for reading" << std::endl;
-            return false;
+        // Load transactions from file
+        auto loadResult = FileUtils::loadTransactionsFromCSV(filename);
+
+        // Add loaded transactions to our transaction list
+        transactions = loadResult.transactions;
+
+        // Log any errors that occurred during loading
+        if (loadResult.hasErrors()) {
+            std::cerr << "Warning: " << loadResult.getErrorCount() << " errors encountered while loading transactions.\n";
         }
-
-        // Skip header line
-        std::string line;
-        std::getline(file, line);
-
-        // Read each transaction line
-        while (std::getline(file, line)) {
-            std::istringstream iss(line);
-            std::string amountStr, dateStr, category, typeStr;
-
-            // Parse CSV values
-            std::getline(iss, amountStr, ',');
-            std::getline(iss, dateStr, ',');
-            std::getline(iss, category, ',');
-            std::getline(iss, typeStr, ',');
-
-            // Convert to appropriate types
-            double amount = std::stod(amountStr);
-            time_t date = std::stoll(dateStr);
-            TransactionType type = (typeStr == "INCOME") ? TransactionType::INCOME : TransactionType::EXPENSE;
-
-            // Create and add the transaction
-            auto transaction = std::make_shared<Transaction>(amount, date, category, type);
-            transactions.push_back(transaction);
-        }
-
-        file.close();
-        return true;
     }
     catch (const std::exception& e) {
         std::cerr << "Error loading transactions: " << e.what() << std::endl;
-        return false;
     }
 }
 

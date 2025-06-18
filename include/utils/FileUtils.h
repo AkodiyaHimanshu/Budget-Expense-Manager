@@ -6,356 +6,160 @@
 #include <memory>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
-#include <filesystem>
-#include <utility>
-#include <algorithm>  // For std::find_if
-#include <cctype>     // For std::isspace
-#include "../../include/models/Transaction.h"
+#include <iostream>
 
-namespace fs = std::filesystem;
+// Include appropriate headers for directory operations
+#ifdef _WIN32
+#include <direct.h>  // For Windows (provides mkdir)
+#else
+#include <sys/stat.h>  // For UNIX/Linux (provides mkdir)
+#include <unistd.h>    // Additional UNIX/Linux utilities
+#endif
 
-/**
- * Represents the result of loading transactions from a CSV file.
- * Contains both successfully loaded transactions and any errors that occurred.
- */
-struct LoadResult {
-    // Successfully loaded transactions
-    std::vector<std::shared_ptr<Transaction>> transactions;
-
-    // Errors encountered during loading (line number and error message pairs)
-    std::vector<std::pair<int, std::string>> errors;
-
-    // Original content of lines that failed to parse
-    std::vector<std::pair<int, std::string>> failedLines;
-
-    // Total number of lines processed (excluding header)
-    int totalLines = 0;
-
-    // Quick access to number of transactions loaded and errors encountered
-    size_t getSuccessCount() const { return transactions.size(); }
-    size_t getErrorCount() const { return errors.size(); }
-
-    // Check if there were any errors during loading
-    bool hasErrors() const { return !errors.empty(); }
-
-    // Get a formatted summary of the loading process
-    std::string getSummary() const {
-        std::ostringstream oss;
-        oss << "Processed " << totalLines << " lines: ";
-        oss << getSuccessCount() << " transactions loaded successfully, ";
-        oss << getErrorCount() << " errors encountered.";
-        return oss.str();
-    }
-
-    // Get detailed error report
-    std::string getErrorReport() const {
-        if (!hasErrors()) return "No errors encountered.";
-
-        std::ostringstream oss;
-        oss << "Encountered " << getErrorCount() << " errors while loading:\n";
-        for (size_t i = 0; i < errors.size(); ++i) {
-            oss << "Line " << errors[i].first << ": " << errors[i].second << "\n";
-            oss << "  Content: \"" << failedLines[i].second << "\"\n";
-        }
-        return oss.str();
-    }
-};
+#include "../models/Transaction.h"
+#include "DateUtils.h"
 
 class FileUtils {
 public:
     /**
-     * Loads transactions from a CSV file.
+     * Result structure for storing transactions loaded from a file
+     * along with any errors encountered during loading
+     */
+    struct LoadResult {
+        std::vector<std::shared_ptr<Transaction>> transactions;
+        std::vector<std::pair<int, std::string>> errors;
+        std::vector<std::pair<int, std::string>> failedLines;
+        int totalLines = 0;
+
+        bool hasErrors() const { return !errors.empty(); }
+        size_t getErrorCount() const { return errors.size(); }
+    };
+
+    /**
+     * Checks if a file exists
      *
-     * @param filePath Path to the CSV file containing transaction data
-     * @return LoadResult containing successfully loaded transactions and any errors
-     * @throws std::runtime_error if file can't be opened
+     * @param filePath The path to the file to check
+     * @return true if the file exists, false otherwise
+     */
+    static bool fileExists(const std::string& filePath) {
+        struct stat buffer;
+        return (stat(filePath.c_str(), &buffer) == 0);
+    }
+
+    /**
+     * Creates a directory if it doesn't already exist
+     *
+     * @param dirPath The path to the directory to create
+     * @return true if the directory was created or already exists, false otherwise
+     */
+    static bool createDirectoryIfNotExists(const std::string& dirPath) {
+        // If directory already exists, return true
+        if (fileExists(dirPath)) {
+            return true;
+        }
+
+        // Create directory (system-dependent)
+#ifdef _WIN32
+        int result = _mkdir(dirPath.c_str());  // Note: Windows uses _mkdir
+#else
+        int result = mkdir(dirPath.c_str(), 0777);  // Unix/Linux uses mkdir with permissions
+#endif
+
+        return (result == 0);
+    }
+
+    /**
+     * Loads transactions from a CSV file
+     *
+     * @param filePath The path to the CSV file
+     * @return LoadResult containing loaded transactions and any errors
      */
     static LoadResult loadTransactionsFromCSV(const std::string& filePath) {
         LoadResult result;
         std::ifstream file(filePath);
 
         if (!file.is_open()) {
-            throw std::runtime_error("Could not open file: " + filePath);
+            result.errors.push_back({ 0, "Failed to open file: " + filePath });
+            return result;
         }
-
-        // Estimate file size to pre-allocate memory
-        size_t estimatedLines = 100; // Default reasonable size
-
-        try {
-            // Some streams might not support seeking
-            file.seekg(0, std::ios::end);
-            const auto fileSize = file.tellg();
-            file.seekg(0, std::ios::beg);
-
-            // Reset stream state in case of errors
-            if (file.fail()) {
-                file.clear();
-                file.seekg(0, std::ios::beg);
-            }
-            else if (fileSize > 0) {
-                // Estimate the number of lines (assuming average line length of 80 characters)
-                // This is a rough estimation that helps avoid repeated memory allocations
-                const size_t avgLineLength = 80;
-                estimatedLines = std::max(size_t(100), size_t(fileSize / avgLineLength));
-
-                // Cap the estimate at a reasonable maximum to avoid excessive allocations
-                const size_t maxReasonableLines = 1000000; // 1 million lines
-                estimatedLines = std::min(estimatedLines, maxReasonableLines);
-            }
-        }
-        catch (const std::exception&) {
-            // If seeking fails for any reason, use the default estimate
-            // This handles non-seekable streams and other exceptional cases
-            file.clear();
-            file.seekg(0, std::ios::beg);
-        }
-
-        // Reserve capacity in our vectors (assume 90% of lines will be valid transactions)
-        // and 10% might have errors (adjust these ratios based on expected data quality)
-        result.transactions.reserve(estimatedLines * 0.9);
-        result.errors.reserve(estimatedLines * 0.1);
-        result.failedLines.reserve(estimatedLines * 0.1);
 
         std::string line;
-        int lineNumber = 0;
-        bool headerProcessed = false;
+        int lineNum = 0;
 
-        // Process the file line by line
+        // Read and process each line
         while (std::getline(file, line)) {
-            lineNumber++;
+            lineNum++;
+            result.totalLines++;
 
             // Skip empty lines
             if (line.empty()) {
-                std::cout << "Line " << lineNumber << ": Empty line skipped." << std::endl;
                 continue;
             }
 
-            // Process header line (first non-empty line)
-            if (!headerProcessed) {
-                // Validate header format
-                if (line != "Amount,Date,Category,Type") {
-                    std::cout << "Warning: Header line doesn't match expected format." << std::endl;
-                    std::cout << "  Expected: Amount,Date,Category,Type" << std::endl;
-                    std::cout << "  Found: " << line << std::endl;
-                }
-                headerProcessed = true;
-                continue;
-            }
-
-            result.totalLines++;
-
-            // Check for obviously malformed CSV (quick check before detailed parsing)
-            int commaCount = 0;
-            for (char c : line) {
-                if (c == ',') commaCount++;
-            }
-
-            if (commaCount < 3) {
-                std::string error = "Insufficient fields (need at least 4 fields, found " +
-                    std::to_string(commaCount + 1) + ")";
-                std::cout << "Line " << lineNumber << ": " << error << " - Skipped" << std::endl;
-                result.errors.push_back({ lineNumber, error });
-                result.failedLines.push_back({ lineNumber, line });
-                continue;
-            }
-
-            // Attempt to parse the line into a transaction
             try {
-                // Check for quotes in the line which might indicate more complex CSV with commas in fields
-                if (line.find('"') != std::string::npos) {
-                    std::cout << "Line " << lineNumber << ": Warning - Quoted fields detected but not supported. "
-                        << "If categories contain commas, they should not be quoted." << std::endl;
+                // Parse CSV line: amount,date,category,type
+                std::stringstream ss(line);
+                std::string amountStr, dateStr, category, typeStr;
+
+                // Read CSV fields
+                if (!std::getline(ss, amountStr, ',') ||
+                    !std::getline(ss, dateStr, ',') ||
+                    !std::getline(ss, category, ',') ||
+                    !std::getline(ss, typeStr)) {
+                    throw std::runtime_error("Invalid CSV format - missing fields");
                 }
 
-                auto transaction = parseTransactionLine(line);
-                if (transaction) {
-                    // Extra validation: check that category isn't just whitespace after trimming
-                    std::string category = transaction->getCategory();
-                    if (category.find_first_not_of(" \t\n\r") == std::string::npos) {
-                        throw std::invalid_argument("Transaction has whitespace-only category");
-                    }
+                // Parse transaction data
+                double amount = std::stod(amountStr);
+                time_t date = DateUtils::stringToTime(dateStr);
+                TransactionType type = (typeStr == "INCOME") ?
+                    TransactionType::INCOME :
+                    TransactionType::EXPENSE;
 
-                    // All validation passed - add the transaction
-                    result.transactions.push_back(transaction);
-
-                    // For extra clarity, indicate successful parsing for the first few transactions
-                    if (result.transactions.size() <= 3) {
-                        std::cout << "Line " << lineNumber << ": Successfully parsed "
-                            << (transaction->getType() == TransactionType::INCOME ? "income" : "expense")
-                            << " transaction of " << transaction->getFormattedAmount()
-                            << " in category '" << transaction->getCategory() << "'" << std::endl;
-                    }
-                    else if (result.transactions.size() == 4) {
-                        std::cout << "Successfully parsing remaining transactions..." << std::endl;
-                    }
-                }
+                // Create and add transaction
+                auto transaction = std::make_shared<Transaction>(amount, date, category, type);
+                result.transactions.push_back(transaction);
             }
             catch (const std::exception& e) {
-                std::string error = e.what();
-                std::cout << "Line " << lineNumber << ": " << error << " - Skipped" << std::endl;
-                result.errors.push_back({ lineNumber, error });
-                result.failedLines.push_back({ lineNumber, line });
+                result.errors.push_back({ lineNum, std::string("Error parsing line: ") + e.what() });
+                result.failedLines.push_back({ lineNum, line });
             }
         }
 
-        // If no header was found, that's unusual
-        if (!headerProcessed) {
-            std::cout << "Warning: No header line found in CSV file." << std::endl;
-        }
-
+        file.close();
         return result;
     }
 
     /**
-     * Saves transactions to a CSV file.
+     * Saves transactions to a CSV file
      *
-     * @param transactions Vector of Transaction objects to save
-     * @param filePath Path where the CSV file should be saved
-     * @throws std::runtime_error if file can't be written
-     * @return Number of transactions written
+     * @param transactions The transactions to save
+     * @param filePath The path to the CSV file
+     * @return The number of transactions saved
      */
-    static int saveTransactionsToCSV(
-        const std::vector<std::shared_ptr<Transaction>>& transactions,
-        const std::string& filePath
-    ) {
-        // Ensure the directory exists
-        fs::path path(filePath);
-        fs::create_directories(path.parent_path());
-
+    static int saveTransactionsToCSV(const std::vector<std::shared_ptr<Transaction>>& transactions,
+        const std::string& filePath) {
         std::ofstream file(filePath);
+
         if (!file.is_open()) {
-            throw std::runtime_error("Could not open file for writing: " + filePath);
+            throw std::runtime_error("Failed to open file for writing: " + filePath);
         }
 
-        // Write header
-        file << "Amount,Date,Category,Type\n";
-
         int count = 0;
-        // Write data
-        for (const auto& transaction : transactions) {
-            file << transaction->getAmount() << ","
-                << transaction->getFormattedDate() << ","
-                << transaction->getCategory() << ","
-                << static_cast<int>(transaction->getType()) << "\n";
+
+        // Write each transaction as a CSV line
+        for (const auto& t : transactions) {
+            file << t->getAmount() << ","
+                << DateUtils::timeToString(t->getDate()) << ","
+                << t->getCategory() << ","
+                << (t->getType() == TransactionType::INCOME ? "INCOME" : "EXPENSE")
+                << std::endl;
 
             count++;
         }
 
         file.close();
         return count;
-    }
-
-private:
-    /**
-     * Parses a single line from the CSV file and creates a Transaction object.
-     *
-     * @param line A line from the CSV file in the format: amount,date,category,type
-     * @return Shared pointer to a Transaction object
-     * @throws std::invalid_argument if line format is invalid
-     */
-    static std::shared_ptr<Transaction> parseTransactionLine(const std::string& line) {
-        std::istringstream ss(line);
-        std::string amountStr, dateStr, category, typeStr;
-
-        // Parse CSV fields and validate completeness
-        if (!std::getline(ss, amountStr, ',')) {
-            throw std::invalid_argument("Missing amount field");
-        }
-        if (!std::getline(ss, dateStr, ',')) {
-            throw std::invalid_argument("Missing date field");
-        }
-        if (!std::getline(ss, category, ',')) {
-            throw std::invalid_argument("Missing category field");
-        }
-        if (!std::getline(ss, typeStr, ',')) {
-            throw std::invalid_argument("Missing transaction type field");
-        }
-
-        // Helper function to trim whitespace
-        auto trim = [](std::string& s) {
-            // Trim leading whitespace
-            s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-                return !std::isspace(ch);
-                }));
-
-            // Trim trailing whitespace
-            s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-                return !std::isspace(ch);
-                }).base(), s.end());
-            };
-
-        // Trim whitespace from all fields
-        trim(amountStr);
-        trim(dateStr);
-        trim(category);
-        trim(typeStr);
-
-        // Validate field content (check for empty fields)
-        if (amountStr.empty()) {
-            throw std::invalid_argument("Amount field is empty");
-        }
-        if (dateStr.empty()) {
-            throw std::invalid_argument("Date field is empty");
-        }
-        if (category.empty()) {
-            throw std::invalid_argument("Category field is empty");
-        }
-        if (typeStr.empty()) {
-            throw std::invalid_argument("Transaction type field is empty");
-        }
-
-        // Convert and validate field values
-        double amount;
-        time_t date;
-        TransactionType type;
-
-        try {
-            // Validate amount (must be a valid number)
-            try {
-                amount = std::stod(amountStr);
-            }
-            catch (const std::exception&) {
-                throw std::invalid_argument("Amount '" + amountStr + "' is not a valid number");
-            }
-
-            // Validate date format (must be ISO: YYYY-MM-DDThh:mm:ss)
-            struct tm tm = {};
-            std::istringstream dateStream(dateStr);
-            dateStream >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-            if (dateStream.fail()) {
-                throw std::invalid_argument("Date '" + dateStr + "' is not in valid ISO format (YYYY-MM-DDThh:mm:ss)");
-            }
-            date = mktime(&tm);
-            if (date == -1) {
-                throw std::invalid_argument("Date '" + dateStr + "' could not be converted to a valid time");
-            }
-
-            // Validate transaction type (must be 0 or 1)
-            int typeInt;
-            try {
-                typeInt = std::stoi(typeStr);
-            }
-            catch (const std::exception&) {
-                throw std::invalid_argument("Transaction type '" + typeStr + "' is not a valid number");
-            }
-
-            if (typeInt == 0) {
-                type = TransactionType::INCOME;
-            }
-            else if (typeInt == 1) {
-                type = TransactionType::EXPENSE;
-            }
-            else {
-                throw std::invalid_argument("Transaction type must be 0 (income) or 1 (expense), got: " + typeStr);
-            }
-        }
-        catch (const std::exception& e) {
-            throw std::invalid_argument("Error parsing transaction: " + std::string(e.what()));
-        }
-
-        // Create and return a new Transaction object
-        return std::make_shared<Transaction>(amount, date, category, type);
     }
 };
 

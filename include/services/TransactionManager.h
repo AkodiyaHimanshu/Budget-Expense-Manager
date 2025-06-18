@@ -3,106 +3,43 @@
 
 #include <vector>
 #include <memory>
-#include <map>
 #include <string>
-#include <fstream>
-#include <filesystem>
-#include <sstream>
+#include <map>
+#include <tuple>
+#include <ctime>
 #include "../models/Transaction.h"
-
-// Structure to hold monthly financial summary
-struct MonthlySummary {
-    double totalIncome;
-    double totalExpenses;
-    double netAmount;
-
-    // Method to calculate and update net amount
-    void updateNetAmount() {
-        netAmount = totalIncome - totalExpenses;
-    }
-};
 
 class TransactionManager {
 private:
     std::vector<std::shared_ptr<Transaction>> transactions;
-
-    // Cache for monthly summaries to avoid redundant calculations
-    mutable std::map<std::string, MonthlySummary> monthlySummaryCache;
-
-    // Cache for monthly transactions
-    mutable std::map<std::string, std::vector<std::shared_ptr<Transaction>>> monthlyTransactionsCache;
-
-    // Flag to track if the cache needs to be invalidated
-    mutable bool cacheValid = true;
-
-    // Store the most recent error message
-    mutable std::string lastErrorMessage;
-
-    // Utility method to calculate net amount (income - expenses)
-    static double calculateNetAmount(double income, double expenses) {
-        return income - expenses;
-    }
-
-    // Utility method to clear all caches
-    void clearCaches() const {
-        monthlySummaryCache.clear();
-        monthlyTransactionsCache.clear();
-        cacheValid = true;
-    }
-
-    // Utility method to check if cache is valid and clear if necessary
-    void validateCache() const {
-        if (!cacheValid) {
-            clearCaches();
-        }
-    }
+    const std::string dataFilePath = "data/transactions.csv";
 
 public:
-    // Add a transaction to the in-memory list
-    void addTransaction(std::shared_ptr<Transaction> transaction);
+    TransactionManager();
+    ~TransactionManager();
 
-    // Get all transactions
-    const std::vector<std::shared_ptr<Transaction>>& getAllTransactions() const;
+    // Core transaction operations
+    void addTransaction(const std::shared_ptr<Transaction>& transaction);
+    std::vector<std::shared_ptr<Transaction>> getAllTransactions() const;
 
-    // Get transactions by type
-    std::vector<std::shared_ptr<Transaction>> getTransactionsByType(TransactionType type) const;
-
-    // Get transactions by category
+    // Filtering methods
     std::vector<std::shared_ptr<Transaction>> getTransactionsByCategory(const std::string& category) const;
+    std::vector<std::shared_ptr<Transaction>> getTransactionsByType(TransactionType type) const;
+    std::vector<std::shared_ptr<Transaction>> getTransactionsByDateRange(time_t startDate, time_t endDate) const;
+    std::vector<std::shared_ptr<Transaction>> getTransactionsByAmountRange(double minAmount, double maxAmount) const;
 
-    // Calculate total for a specific transaction type
-    double calculateTotal(TransactionType type) const;
+    // Grouping and analysis
+    std::map<std::string, std::vector<std::shared_ptr<Transaction>>> getTransactionsByMonth() const;
+    std::map<std::string, std::tuple<double, double, double>> calculateMonthlySummary() const;
 
-    // Calculate net amount (income - expenses) across all transactions
-    double calculateNetTotal() const;
+    // Data persistence
+    void saveTransactions();
+    void loadTransactions();
 
-    // Get transactions for a specific month (format: YYYY-MM)
-    std::vector<std::shared_ptr<Transaction>> getTransactionsByMonth(const std::string& yearMonth) const;
-
-    // Calculate monthly summary for a specific month (format: YYYY-MM)
-    MonthlySummary calculateMonthlySummary(const std::string& yearMonth) const;
-
-    // Group transactions by month and return monthly summaries
-    // Returns a const reference to avoid copying the entire map
-
-    /**
-     * Exports all transactions to a CSV file.
-     *
-     * @param filename The path to the CSV file
-     * @return true if export was successful, false otherwise
-     */
-    bool exportTransactionsToCSV(const std::string& filename) const;
-
-    /**
-     * Gets the most recent error message.
-     *
-     * @return String containing the most recent error message
-     */
-    std::string getLastErrorMessage() const {
-        return lastErrorMessage;
-    }
-
-    const std::map<std::string, MonthlySummary>& getMonthlyTransactionSummaries() const;
+    // Financial calculations
+    double getTotalIncome() const;
+    double getTotalExpenses() const;
+    double getNetAmount() const;
 };
 
 #endif // TRANSACTION_MANAGER_H

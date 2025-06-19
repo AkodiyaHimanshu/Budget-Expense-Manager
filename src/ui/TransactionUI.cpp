@@ -231,66 +231,61 @@ void TransactionUI::showTransactionsByDateRange() const {
         << startDateStr << " and " << endDateStr << ".\n";
 }
 
-void TransactionUI::showTransactionsByAmountRange() const {
+void TransactionUI::showTransactionsByAmountRange() {
     std::cout << "\n===== Filter Transactions by Amount Range =====\n";
 
-    double minAmount = 0.0;
-    double maxAmount = 0.0;
+    double minAmount, maxAmount;
 
-    std::cout << "Enter minimum amount (₹): ";
-    std::cin >> minAmount;
-    if (std::cin.fail()) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Invalid input. Operation cancelled.\n";
-        return;
-    }
-
-    std::cout << "Enter maximum amount (₹): ";
-    std::cin >> maxAmount;
-    if (std::cin.fail()) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Invalid input. Operation cancelled.\n";
-        return;
+    // Get minimum amount with validation
+    while (true) {
+        std::cout << "Enter minimum amount (₹): ";
+        if (!(std::cin >> minAmount)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Invalid input. Please enter a valid number.\n";
+            continue;
+        }
+        if (minAmount < 0) {
+            std::cout << "Minimum amount cannot be negative. Please try again.\n";
+            continue;
+        }
+        break;
     }
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    if (minAmount > maxAmount) {
-        std::cout << "Error: Minimum amount cannot be greater than maximum amount.\n";
-        return;
+    // Get maximum amount with validation
+    while (true) {
+        std::cout << "Enter maximum amount (₹): ";
+        if (!(std::cin >> maxAmount)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Invalid input. Please enter a valid number.\n";
+            continue;
+        }
+        if (maxAmount < 0) {
+            std::cout << "Maximum amount cannot be negative. Please try again.\n";
+            continue;
+        }
+        if (maxAmount < minAmount) {
+            std::cout << "Maximum amount must be greater than or equal to minimum amount (" << minAmount << "₹). Please try again.\n";
+            continue;
+        }
+        break;
     }
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    auto filteredTransactions = transactionManager->getTransactionsByAmountRange(minAmount, maxAmount);
+    // Get filtered transactions
+    std::vector<std::shared_ptr<Transaction>> filteredTransactions =
+        transactionManager->getTransactionsByAmountRange(minAmount, maxAmount);
 
     if (filteredTransactions.empty()) {
-        std::cout << "No transactions found between ₹" << minAmount << " and ₹" << maxAmount << ".\n";
+        std::cout << "No transactions found in the range of ₹" << minAmount << " to ₹" << maxAmount << ".\n";
         return;
     }
 
-    displayTransactionHeader();
+    // Display the filtered transactions
+    std::cout << "\n===== Transactions between ₹" << minAmount << " and ₹" << maxAmount << " =====\n";
     displayTransactions(filteredTransactions);
-
-    std::cout << "\nFound " << filteredTransactions.size() << " transaction(s) between ₹"
-        << minAmount << " and ₹" << maxAmount << ".\n";
-
-    // Display summary statistics for filtered transactions
-    double totalIncome = 0.0;
-    double totalExpenses = 0.0;
-
-    for (const auto& t : filteredTransactions) {
-        if (t->getType() == TransactionType::INCOME) {
-            totalIncome += t->getAmount();
-        }
-        else {
-            totalExpenses += t->getAmount();
-        }
-    }
-
-    std::cout << "\nSummary of filtered transactions:\n";
-    std::cout << "Total Income: ₹" << std::fixed << std::setprecision(2) << totalIncome << "\n";
-    std::cout << "Total Expenses: ₹" << std::fixed << std::setprecision(2) << totalExpenses << "\n";
-    std::cout << "Net Amount: ₹" << std::fixed << std::setprecision(2) << (totalIncome - totalExpenses) << "\n";
 }
 
 void TransactionUI::showTransactionsByMonth() const {

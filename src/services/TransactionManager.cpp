@@ -69,16 +69,14 @@ std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByD
 }
 
 std::vector<std::shared_ptr<Transaction>> TransactionManager::getTransactionsByAmountRange(double minAmount, double maxAmount) const {
-    std::vector<std::shared_ptr<Transaction>> result;
-
-    for (const auto& t : transactions) {
-        double amount = t->getAmount();
+    std::vector<std::shared_ptr<Transaction>> filteredTransactions;
+    for (const auto& transaction : transactions) {
+        double amount = transaction->getAmount();
         if (amount >= minAmount && amount <= maxAmount) {
-            result.push_back(t);
+            filteredTransactions.push_back(transaction);
         }
     }
-
-    return result;
+    return filteredTransactions;
 }
 
 std::map<std::string, std::vector<std::shared_ptr<Transaction>>> TransactionManager::getTransactionsByMonth() const {

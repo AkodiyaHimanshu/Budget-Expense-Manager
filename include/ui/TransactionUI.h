@@ -45,7 +45,7 @@ public:
     void showTransactionsByType() const;
     void showTransactionsByDateRange() const;
     void showTransactionsByMonth() const;
-    void showTransactionsByAmountRange() const; // New method for amount range filtering
+    void showTransactionsByAmountRange();
     void showMonthlySummary() const;
 
     // Transaction management methods

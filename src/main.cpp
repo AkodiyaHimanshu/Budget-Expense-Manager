@@ -279,12 +279,17 @@ void displayMenu() {
 }
 
 void displayTransactionViewMenu() {
-    std::cout << "\n===== View Transactions =====\n";
-    std::cout << "1. All Transactions\n";
-    std::cout << "2. Transactions by Category\n";
-    std::cout << "3. Transactions by Type\n";
+    std::cout << "\n===== Transactions Menu =====\n";
+    std::cout << "1. View All Transactions\n";
+    std::cout << "2. Filter by Category\n";
+    std::cout << "3. Filter by Type (Income/Expense)\n";
+    std::cout << "4. Filter by Date Range\n";
+    std::cout << "5. Filter by Amount Range\n";  // New option
+    std::cout << "6. View by Month\n";
+    std::cout << "7. View Monthly Summary\n";
+    std::cout << "8. Add New Transaction\n";
     std::cout << "0. Back to Main Menu\n";
-    std::cout << "Enter your choice (0-3): ";
+    std::cout << "Enter your choice (0-8): ";  // Updated range
 }
 
 void displayMonthlyAnalysisMenu() {

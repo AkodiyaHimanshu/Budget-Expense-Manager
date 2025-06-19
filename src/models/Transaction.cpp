@@ -73,10 +73,10 @@ std::string Transaction::getFormattedAmount() const {
     ss << std::fixed << std::setprecision(2) << amount;
 
     if (type == TransactionType::INCOME) {
-        return "Rs." + ss.str();
+        return "$" + ss.str();
     }
     else {
-        return "-Rs." + ss.str();
+        return "-$" + ss.str();
     }
 }
 

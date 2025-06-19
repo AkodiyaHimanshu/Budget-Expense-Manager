@@ -24,7 +24,7 @@ void TransactionUI::displayTransactionHeader() const {
     std::cout << std::left << std::setw(12) << "Date"
         << std::setw(12) << "Type"
         << std::setw(15) << "Category"
-        << std::right << std::setw(15) << "Amount (₹)"
+        << std::right << std::setw(15) << "Amount ($)"
         << "\n";
     std::cout << std::string(55, '-') << "\n";
 }
@@ -46,15 +46,15 @@ void TransactionUI::displayFinancialSummary() const {
     double netAmount = transactionManager->getNetAmount();
 
     std::cout << "\n===== Financial Summary =====\n";
-    std::cout << "Total Income: ₹" << std::fixed << std::setprecision(2) << totalIncome << "\n";
-    std::cout << "Total Expenses: ₹" << std::fixed << std::setprecision(2) << totalExpenses << "\n";
-    std::cout << "Net Amount: ₹" << std::fixed << std::setprecision(2) << netAmount << "\n";
+    std::cout << "Total Income: $" << std::fixed << std::setprecision(2) << totalIncome << "\n";
+    std::cout << "Total Expenses: $" << std::fixed << std::setprecision(2) << totalExpenses << "\n";
+    std::cout << "Net Amount: $" << std::fixed << std::setprecision(2) << netAmount << "\n";
 
     if (netAmount > 0) {
-        std::cout << "Status: You have a surplus of ₹" << std::fixed << std::setprecision(2) << netAmount << "\n";
+        std::cout << "Status: You have a surplus of $" << std::fixed << std::setprecision(2) << netAmount << "\n";
     }
     else if (netAmount < 0) {
-        std::cout << "Status: You have a deficit of ₹" << std::fixed << std::setprecision(2) << std::abs(netAmount) << "\n";
+        std::cout << "Status: You have a deficit of $" << std::fixed << std::setprecision(2) << std::abs(netAmount) << "\n";
     }
     else {
         std::cout << "Status: Your budget is balanced (income equals expenses)\n";
@@ -64,9 +64,9 @@ void TransactionUI::displayFinancialSummary() const {
 void TransactionUI::displayMonthlySummaryHeader() const {
     std::cout << "\n";
     std::cout << std::left << std::setw(15) << "Month"
-        << std::right << std::setw(15) << "Income (₹)"
-        << std::setw(15) << "Expenses (₹)"
-        << std::setw(15) << "Net (₹)"
+        << std::right << std::setw(15) << "Income ($)"
+        << std::setw(15) << "Expenses ($)"
+        << std::setw(15) << "Net ($)"
         << "\n";
     std::cout << std::string(60, '-') << "\n";
 }
@@ -116,7 +116,7 @@ std::shared_ptr<Transaction> TransactionUI::createTransaction(TransactionType ty
     std::string category;
 
     // Get and validate transaction amount
-    if (!validateDoubleInput(amount, "Enter amount (₹): ")) {
+    if (!validateDoubleInput(amount, "Enter amount ($): ")) {
         return nullptr;
     }
 
@@ -238,7 +238,7 @@ void TransactionUI::showTransactionsByAmountRange() {
 
     // Get minimum amount with validation
     while (true) {
-        std::cout << "Enter minimum amount (₹): ";
+        std::cout << "Enter minimum amount ($): ";
         if (!(std::cin >> minAmount)) {
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -255,7 +255,7 @@ void TransactionUI::showTransactionsByAmountRange() {
 
     // Get maximum amount with validation
     while (true) {
-        std::cout << "Enter maximum amount (₹): ";
+        std::cout << "Enter maximum amount ($): ";
         if (!(std::cin >> maxAmount)) {
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -267,7 +267,7 @@ void TransactionUI::showTransactionsByAmountRange() {
             continue;
         }
         if (maxAmount < minAmount) {
-            std::cout << "Maximum amount must be greater than or equal to minimum amount (" << minAmount << "₹). Please try again.\n";
+            std::cout << "Maximum amount must be greater than or equal to minimum amount (" << minAmount << "$). Please try again.\n";
             continue;
         }
         break;
@@ -279,12 +279,12 @@ void TransactionUI::showTransactionsByAmountRange() {
         transactionManager->getTransactionsByAmountRange(minAmount, maxAmount);
 
     if (filteredTransactions.empty()) {
-        std::cout << "No transactions found in the range of ₹" << minAmount << " to ₹" << maxAmount << ".\n";
+        std::cout << "No transactions found in the range of $" << minAmount << " to $" << maxAmount << ".\n";
         return;
     }
 
     // Display the filtered transactions
-    std::cout << "\n===== Transactions between ₹" << minAmount << " and ₹" << maxAmount << " =====\n";
+    std::cout << "\n===== Transactions between $" << minAmount << " and $" << maxAmount << " =====\n";
     displayTransactions(filteredTransactions);
 }
 

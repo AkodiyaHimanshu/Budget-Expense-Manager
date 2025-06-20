@@ -77,15 +77,35 @@ void BudgetUI::showBudgetsByMonth() {
     std::cout << "\n===== View Budgets by Month =====\n";
 
     // Get and validate year-month
-    while (true) {
+    bool validYearMonth = false;
+    while (!validYearMonth) {
         std::cout << "Enter year-month (YYYY-MM): ";
         std::getline(std::cin, yearMonth);
 
-        if (DateUtils::validateYearMonth(yearMonth)) {
-            break;
-        }
+        try {
+            // First check basic format using DateUtils
+            if (!DateUtils::validateYearMonth(yearMonth)) {
+                throw std::invalid_argument("Invalid year-month format");
+            }
 
-        std::cout << "Invalid year-month format. Please use YYYY-MM (e.g., 2023-06).\n";
+            // Then extract values and validate range using Budget method
+            size_t dashPos = yearMonth.find('-');
+            if (dashPos != std::string::npos) {
+                int year = std::stoi(yearMonth.substr(0, dashPos));
+                int month = std::stoi(yearMonth.substr(dashPos + 1));
+
+                // This will throw if month or year is invalid
+                Budget::createYearMonthString(year, month);
+
+                validYearMonth = true;
+            }
+            else {
+                throw std::invalid_argument("Missing dash separator");
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Invalid input: " << e.what() << ". Please use YYYY-MM format (e.g., 2023-06).\n";
+        }
     }
 
     auto budgets = budgetManager->getBudgetsByYearMonth(yearMonth);
@@ -110,15 +130,35 @@ void BudgetUI::setBudget() {
     std::getline(std::cin, category);
 
     // Get and validate year-month
-    while (true) {
+    bool validYearMonth = false;
+    while (!validYearMonth) {
         std::cout << "Enter year-month (YYYY-MM): ";
         std::getline(std::cin, yearMonth);
 
-        if (DateUtils::validateYearMonth(yearMonth)) {
-            break;
-        }
+        try {
+            // First check basic format using DateUtils
+            if (!DateUtils::validateYearMonth(yearMonth)) {
+                throw std::invalid_argument("Invalid year-month format");
+            }
 
-        std::cout << "Invalid year-month format. Please use YYYY-MM (e.g., 2023-06).\n";
+            // Then extract values and validate range using Budget method
+            size_t dashPos = yearMonth.find('-');
+            if (dashPos != std::string::npos) {
+                int year = std::stoi(yearMonth.substr(0, dashPos));
+                int month = std::stoi(yearMonth.substr(dashPos + 1));
+
+                // This will throw if month or year is invalid
+                Budget::createYearMonthString(year, month);
+
+                validYearMonth = true;
+            }
+            else {
+                throw std::invalid_argument("Missing dash separator");
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Invalid input: " << e.what() << ". Please use YYYY-MM format (e.g., 2023-06).\n";
+        }
     }
 
     // Get and validate limit amount
@@ -173,15 +213,35 @@ void BudgetUI::updateBudget() {
     std::getline(std::cin, category);
 
     // Get and validate year-month
-    while (true) {
+    bool validYearMonth = false;
+    while (!validYearMonth) {
         std::cout << "Enter year-month (YYYY-MM): ";
         std::getline(std::cin, yearMonth);
 
-        if (DateUtils::validateYearMonth(yearMonth)) {
-            break;
-        }
+        try {
+            // First check basic format using DateUtils
+            if (!DateUtils::validateYearMonth(yearMonth)) {
+                throw std::invalid_argument("Invalid year-month format");
+            }
 
-        std::cout << "Invalid year-month format. Please use YYYY-MM (e.g., 2023-06).\n";
+            // Then extract values and validate range using Budget method
+            size_t dashPos = yearMonth.find('-');
+            if (dashPos != std::string::npos) {
+                int year = std::stoi(yearMonth.substr(0, dashPos));
+                int month = std::stoi(yearMonth.substr(dashPos + 1));
+
+                // This will throw if month or year is invalid
+                Budget::createYearMonthString(year, month);
+
+                validYearMonth = true;
+            }
+            else {
+                throw std::invalid_argument("Missing dash separator");
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Invalid input: " << e.what() << ". Please use YYYY-MM format (e.g., 2023-06).\n";
+        }
     }
 
     // Check if the budget exists
@@ -245,15 +305,35 @@ void BudgetUI::removeBudget() {
     std::getline(std::cin, category);
 
     // Get and validate year-month
-    while (true) {
+    bool validYearMonth = false;
+    while (!validYearMonth) {
         std::cout << "Enter year-month (YYYY-MM): ";
         std::getline(std::cin, yearMonth);
 
-        if (DateUtils::validateYearMonth(yearMonth)) {
-            break;
-        }
+        try {
+            // First check basic format using DateUtils
+            if (!DateUtils::validateYearMonth(yearMonth)) {
+                throw std::invalid_argument("Invalid year-month format");
+            }
 
-        std::cout << "Invalid year-month format. Please use YYYY-MM (e.g., 2023-06).\n";
+            // Then extract values and validate range using Budget method
+            size_t dashPos = yearMonth.find('-');
+            if (dashPos != std::string::npos) {
+                int year = std::stoi(yearMonth.substr(0, dashPos));
+                int month = std::stoi(yearMonth.substr(dashPos + 1));
+
+                // This will throw if month or year is invalid
+                Budget::createYearMonthString(year, month);
+
+                validYearMonth = true;
+            }
+            else {
+                throw std::invalid_argument("Missing dash separator");
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Invalid input: " << e.what() << ". Please use YYYY-MM format (e.g., 2023-06).\n";
+        }
     }
 
     // Check if the budget exists
@@ -363,8 +443,18 @@ void BudgetUI::showBudgetUsageReport() {
     // Default to current month
     time_t now = time(nullptr);
     tm* localTime = localtime(&now);
-    std::string defaultYearMonth = Budget::createYearMonthString(
-        localTime->tm_year + 1900, localTime->tm_mon + 1);
+
+    // Try to create the default year-month with validation
+    std::string defaultYearMonth;
+    try {
+        defaultYearMonth = Budget::createYearMonthString(
+            localTime->tm_year + 1900, localTime->tm_mon + 1);
+    }
+    catch (const std::invalid_argument& e) {
+        std::cerr << "Error creating default month: " << e.what() << std::endl;
+        // Fallback to current year and January if system time is problematic
+        defaultYearMonth = std::to_string(localTime->tm_year + 1900) + "-01";
+    }
 
     // Get and validate year-month, with option to use default
     std::cout << "Enter year-month (YYYY-MM) or press Enter for current month ("
@@ -375,13 +465,38 @@ void BudgetUI::showBudgetUsageReport() {
         yearMonth = defaultYearMonth;
     }
     else {
-        while (!DateUtils::validateYearMonth(yearMonth)) {
-            std::cout << "Invalid year-month format. Please use YYYY-MM (e.g., 2023-06): ";
-            std::getline(std::cin, yearMonth);
+        bool validInput = false;
+        while (!validInput) {
+            try {
+                // Validate the input format and values
+                if (!DateUtils::validateYearMonth(yearMonth)) {
+                    throw std::invalid_argument("Invalid year-month format");
+                }
 
-            if (yearMonth.empty()) {
-                yearMonth = defaultYearMonth;
-                break;
+                // Additional validation (extract and check values)
+                size_t dashPos = yearMonth.find('-');
+                if (dashPos != std::string::npos) {
+                    int year = std::stoi(yearMonth.substr(0, dashPos));
+                    int month = std::stoi(yearMonth.substr(dashPos + 1));
+
+                    // Use Budget::createYearMonthString for validation
+                    // This will throw if month is invalid
+                    Budget::createYearMonthString(year, month);
+
+                    validInput = true;
+                }
+                else {
+                    throw std::invalid_argument("Missing dash separator");
+                }
+            }
+            catch (const std::exception& e) {
+                std::cout << "Invalid input: " << e.what() << ". Please use YYYY-MM format (e.g., 2023-06): ";
+                std::getline(std::cin, yearMonth);
+
+                if (yearMonth.empty()) {
+                    yearMonth = defaultYearMonth;
+                    validInput = true;
+                }
             }
         }
     }

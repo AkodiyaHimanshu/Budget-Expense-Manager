@@ -17,23 +17,29 @@ BudgetManager::~BudgetManager() {
 }
 
 void BudgetManager::addBudget(const std::shared_ptr<Budget>& budget) {
-    // Get key for lookup
     std::string key = createBudgetKey(budget->getCategory(), budget->getYearMonth());
+    bool changed = false;
 
-    // Check if a budget for this category and month already exists
+    // Check if budget already exists
     auto it = budgets.find(key);
     if (it != budgets.end()) {
-        // Update the existing budget if the amount is different
+        // Only update if the value is actually changing
         if (it->second->getLimitAmount() != budget->getLimitAmount()) {
             it->second->setLimitAmount(budget->getLimitAmount());
-            saveBudgets();
+            changed = true;
         }
-        return;
+        // Note: No changes needed if the amounts are identical
+    }
+    else {
+        // Add the new budget
+        budgets[key] = budget;
+        changed = true;
     }
 
-    // Add the new budget - O(1) operation with unordered_map
-    budgets[key] = budget;
-    saveBudgets();
+    // Only save if something actually changed
+    if (changed) {
+        saveBudgets();
+    }
 }
 
 void BudgetManager::updateBudget(const std::string& category, const std::string& yearMonth, double newLimit) {

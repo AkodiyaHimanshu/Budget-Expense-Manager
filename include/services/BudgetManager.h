@@ -4,12 +4,19 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include "../models/Budget.h"
 
 class BudgetManager {
 private:
-    std::vector<std::shared_ptr<Budget>> budgets;
+    // Use unordered_map for O(1) lookups instead of O(n) vector scans
+    std::unordered_map<std::string, std::shared_ptr<Budget>> budgets;
     const std::string dataFilePath = "data/budgets.csv";
+
+    // Helper method to create a unique key for the map
+    std::string createBudgetKey(const std::string& category, const std::string& yearMonth) const {
+        return category + "|" + yearMonth;
+    }
 
 public:
     BudgetManager();

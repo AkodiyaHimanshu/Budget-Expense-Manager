@@ -1,4 +1,4 @@
-#include "Budget.h"
+#include "../../include/models/Budget.h"
 #include <iostream>
 
 // Default constructor

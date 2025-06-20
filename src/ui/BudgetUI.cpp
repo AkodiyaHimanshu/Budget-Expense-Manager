@@ -1,4 +1,9 @@
+#include "../../include/ui/BudgetUI.h"
+#include "../../include/services/BudgetManager.h"
+#include "../../include/services/TransactionManager.h"
 #include "../../include/models/Budget.h"
+#include "../../include/models/Transaction.h"
+#include "../../include/utils/DateUtils.h"
 #include <iostream>
 #include <iomanip>
 #include <ctime>
@@ -6,7 +11,6 @@
 #include <limits>
 #include <algorithm>
 #include <vector>
-#include "../../include/utils/DateUtils.h"
 
 BudgetUI::BudgetUI(const std::shared_ptr<BudgetManager>& budgetManager,
     const std::shared_ptr<TransactionManager>& transactionManager)
@@ -292,6 +296,7 @@ void BudgetUI::displayBudgetUsage(const std::shared_ptr<Budget>& budget) {
     double totalExpenses = 0.0;
 
     // Get all expense transactions
+    // TransactionType is an enum class defined in Transaction.h
     auto allTransactions = transactionManager->getTransactionsByType(TransactionType::EXPENSE);
 
     // Filter by category and month

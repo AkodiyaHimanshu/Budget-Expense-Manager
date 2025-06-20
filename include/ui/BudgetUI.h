@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+#include "../models/Budget.h"
 #include "../services/BudgetManager.h"
 #include "../services/TransactionManager.h"
 

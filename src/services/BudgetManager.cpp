@@ -1,5 +1,6 @@
 #include "../../include/services/BudgetManager.h"
 #include "../../include/utils/FileUtils.h"
+#include "../../include/models/Budget.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>

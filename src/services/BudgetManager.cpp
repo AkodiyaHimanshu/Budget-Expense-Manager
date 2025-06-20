@@ -30,18 +30,33 @@ void BudgetManager::addBudget(const std::shared_ptr<Budget>& budget) {
 }
 
 void BudgetManager::updateBudget(const std::string& category, const std::string& yearMonth, double newLimit) {
+    bool changed = false;
+    bool budgetFound = false;
+
+    // Try to find and update existing budget
     for (auto& budget : budgets) {
         if (budget->getCategory() == category && budget->getYearMonth() == yearMonth) {
-            budget->setLimitAmount(newLimit);
-            saveBudgets();
-            return;
+            // Only update if the value is actually changing
+            if (budget->getLimitAmount() != newLimit) {
+                budget->setLimitAmount(newLimit);
+                changed = true;
+            }
+            budgetFound = true;
+            break;  // Exit loop once we find the matching budget
         }
     }
 
-    // If we reach here, the budget doesn't exist, so create it
-    auto newBudget = std::make_shared<Budget>(category, yearMonth, newLimit);
-    budgets.push_back(newBudget);
-    saveBudgets();
+    // If budget doesn't exist, create a new one
+    if (!budgetFound) {
+        auto newBudget = std::make_shared<Budget>(category, yearMonth, newLimit);
+        budgets.push_back(newBudget);
+        changed = true;
+    }
+
+    // Only save if something actually changed
+    if (changed) {
+        saveBudgets();
+    }
 }
 
 bool BudgetManager::removeBudget(const std::string& category, const std::string& yearMonth) {

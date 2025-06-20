@@ -1,4 +1,4 @@
-#include "BudgetUI.h"
+#include "../../include/models/Budget.h"
 #include <iostream>
 #include <iomanip>
 #include <ctime>
@@ -6,7 +6,7 @@
 #include <limits>
 #include <algorithm>
 #include <vector>
-#include "../utils/DateUtils.h"
+#include "../../include/utils/DateUtils.h"
 
 BudgetUI::BudgetUI(const std::shared_ptr<BudgetManager>& budgetManager,
     const std::shared_ptr<TransactionManager>& transactionManager)

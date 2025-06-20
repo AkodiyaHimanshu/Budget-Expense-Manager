@@ -3,13 +3,13 @@
 #include <limits>
 #include <string>
 
-#include "models/Transaction.h"
-#include "services/TransactionManager.h"
-#include "ui/TransactionUI.h"
+#include "../include/models/Transaction.h"
+#include "../include/services/TransactionManager.h"
+#include "../include/ui/TransactionUI.h"
 
-#include "models/Budget.h"
-#include "services/BudgetManager.h"
-#include "ui/BudgetUI.h"
+#include "../include/models/Budget.h"
+#include "../include/services/BudgetManager.h"
+#include "../include/ui/BudgetUI.h"
 
 void displayMainMenu() {
     std::cout << "\n===== Budget & Expense Manager =====\n";

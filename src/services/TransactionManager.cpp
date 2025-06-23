@@ -11,6 +11,18 @@ TransactionManager::TransactionManager() {
     loadTransactions();
 }
 
+TransactionManager::TransactionManager(std::shared_ptr<UserProfile> profile)
+    : userProfile(profile) {
+    if (userProfile) {
+        filePath = userProfile->getTransactionsFilePath();
+    }
+    else {
+        // Fallback to default path if no profile
+        filePath = "data/transactions.csv";
+    }
+    loadTransactions();
+}
+
 TransactionManager::~TransactionManager() {
     // Ensure transactions are saved before destroying the manager
     try {
@@ -237,4 +249,23 @@ bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>&
     }
 
     return false;
+}
+
+void TransactionManager::setUserProfile(std::shared_ptr<UserProfile> profile) {
+    // Save current transactions if needed
+    if (!transactions.empty() && userProfile) {
+        saveTransactions();
+    }
+
+    userProfile = profile;
+
+    if (userProfile) {
+        filePath = userProfile->getTransactionsFilePath();
+    }
+    else {
+        filePath = "data/transactions.csv";
+    }
+
+    // Load transactions for the new profile
+    loadTransactions();
 }

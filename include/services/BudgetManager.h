@@ -6,11 +6,15 @@
 #include <string>
 #include <unordered_map>
 #include "../models/Budget.h"
+#include "../models/UserProfile.h"
 
 class BudgetManager {
 private:
     // Use unordered_map for O(1) lookups instead of O(n) vector scans
     std::unordered_map<std::string, std::shared_ptr<Budget>> budgets;
+    std::string filePath; // Will be set based on the user profile
+    std::shared_ptr<UserProfile> userProfile; // Add user profile reference
+
     const std::string dataFilePath = "data/budgets.csv";
 
     // Helper method to create a unique key for the map
@@ -20,6 +24,8 @@ private:
 
 public:
     BudgetManager();
+    BudgetManager(std::shared_ptr<UserProfile> profile);
+
     ~BudgetManager();
 
     // Core budget operations
@@ -39,4 +45,7 @@ public:
     // Data persistence
     void saveBudgets();
     void loadBudgets();
+
+    // Set/change the user profile
+    void setUserProfile(std::shared_ptr<UserProfile> profile);
 };

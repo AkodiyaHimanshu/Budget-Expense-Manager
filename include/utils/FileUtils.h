@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cerrno> 
 
 // Include appropriate headers for directory operations
 #ifdef _WIN32
@@ -18,6 +19,7 @@
 
 #include "../models/Transaction.h"
 #include "DateUtils.h"
+#include <sys/stat.h>
 
 class FileUtils {
 public:
@@ -160,6 +162,169 @@ public:
 
         file.close();
         return count;
+    }
+
+    static std::vector<std::vector<std::string>> readCSV(const std::string& filePath) {
+        std::vector<std::vector<std::string>> data;
+
+        // Check if file exists first
+        if (!fileExists(filePath)) {
+            // Return empty data if file doesn't exist
+            return data;
+        }
+
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Error: Could not open file " << filePath << " for reading." << std::endl;
+            return data;
+        }
+
+        std::string line;
+        while (std::getline(file, line)) {
+            // Skip empty lines
+            if (line.empty()) {
+                continue;
+            }
+
+            // Parse the CSV line
+            std::vector<std::string> row = split(line, ',');
+            data.push_back(row);
+        }
+
+        file.close();
+        return data;
+    }
+
+    static bool writeCSV(const std::string& filePath, const std::vector<std::vector<std::string>>& data) {
+        std::ofstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Error: Could not open file " << filePath << " for writing." << std::endl;
+            return false;
+        }
+
+        for (const auto& row : data) {
+            for (size_t i = 0; i < row.size(); ++i) {
+                const std::string& field = row[i];
+
+                // Check if field contains special characters that need quoting
+                bool needsQuotes = field.find(',') != std::string::npos ||
+                    field.find('"') != std::string::npos ||
+                    field.find('\n') != std::string::npos;
+
+                if (needsQuotes) {
+                    // Add quotes and escape internal quotes by doubling them
+                    file << '"';
+                    for (char c : field) {
+                        if (c == '"') {
+                            file << '"' << '"'; // Escape quotes with double quotes
+                        }
+                        else {
+                            file << c;
+                        }
+                    }
+                    file << '"';
+                }
+                else {
+                    file << field;
+                }
+
+                if (i < row.size() - 1) {
+                    file << ',';
+                }
+            }
+            file << '\n';
+        }
+
+        file.close();
+        return true;
+    }
+
+    static bool createDirectories(const std::string& dirPath) {
+        // Handle empty path
+        if (dirPath.empty()) {
+            return false;
+        }
+
+        // Create each directory in the path
+        std::string path = dirPath;
+
+        // Replace backslashes with forward slashes for consistency
+        for (char& c : path) {
+            if (c == '\\') {
+                c = '/';
+            }
+        }
+
+        // Add trailing slash if not present
+        if (path.back() != '/') {
+            path += '/';
+        }
+
+        // Create each directory level
+        size_t pos = 0;
+        while ((pos = path.find_first_of('/', pos + 1)) != std::string::npos) {
+            std::string subdir = path.substr(0, pos);
+
+            // Skip empty subdirectory
+            if (subdir.empty()) {
+                continue;
+            }
+
+#ifdef _WIN32
+            // Windows implementation
+            if (_mkdir(subdir.c_str()) != 0 && errno != EEXIST) {
+                return false;
+            }
+#else
+            // Unix implementation
+            if (mkdir(subdir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST) {
+                return false;
+            }
+#endif
+        }
+
+        return true;
+    }
+
+    static std::string getFileExtension(const std::string& filePath) {
+        size_t dotPos = filePath.find_last_of('.');
+        if (dotPos == std::string::npos || dotPos == 0) {
+            return "";
+        }
+        return filePath.substr(dotPos + 1);
+    }
+
+    static std::vector<std::string> split(const std::string& str, char delimiter) {
+        std::vector<std::string> tokens;
+        std::stringstream ss(str);
+        std::string token;
+
+        // Simple CSV parser that handles quoted fields (which might contain the delimiter)
+        bool inQuotes = false;
+        std::string field;
+
+        for (char c : str) {
+            // Toggle quote state
+            if (c == '"') {
+                inQuotes = !inQuotes;
+                continue;  // Don't include the quotes in the result
+            }
+
+            // If delimiter found and not in quotes, add field to result
+            if (c == delimiter && !inQuotes) {
+                tokens.push_back(field);
+                field.clear();
+                continue;
+            }
+
+            // Add character to current field
+            field += c;
+        }
+
+        // Add the last field
+        tokens.push_back(field);
+
+        return tokens;
     }
 };
 

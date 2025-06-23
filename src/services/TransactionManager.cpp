@@ -168,3 +168,57 @@ double TransactionManager::getTotalExpenses() const {
 double TransactionManager::getNetAmount() const {
     return getTotalIncome() - getTotalExpenses();
 }
+
+bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>& transaction,
+    const std::shared_ptr<BudgetManager>& budgetManager,
+    std::string& warningMessage) const {
+    // Only check for expense transactions
+    if (transaction->getType() != TransactionType::EXPENSE) {
+        return false;
+    }
+
+    std::string category = transaction->getCategory();
+    std::string monthKey = transaction->getMonthKey();
+    double amount = transaction->getAmount();
+
+    // Get the budget for this category and month
+    auto budget = budgetManager->getBudgetByMonthAndCategory(monthKey, category);
+    if (!budget) {
+        return false; // No budget set for this category/month
+    }
+
+    // Calculate current spending for this category in this month
+    double currentSpending = 0.0;
+    for (const auto& t : transactions) {
+        if (t->getType() == TransactionType::EXPENSE &&
+            t->getCategory() == category &&
+            t->getMonthKey() == monthKey) {
+            currentSpending += t->getAmount();
+        }
+    }
+
+    // Add the new transaction amount
+    double newTotal = currentSpending + amount;
+    double limit = budget->getAmount();
+
+    // Check if it exceeds the budget
+    if (newTotal > limit) {
+        double percentExceeded = ((newTotal - limit) / limit) * 100.0;
+        warningMessage = "WARNING: This expense will exceed your budget for " +
+            category + " in " + monthKey + " by $" +
+            std::to_string(newTotal - limit) +
+            " (" + std::to_string(static_cast<int>(percentExceeded)) + "%).";
+        return true;
+    }
+
+    // Check if it's close to the budget (90% or more)
+    if (newTotal >= 0.9 * limit) {
+        double percentUsed = (newTotal / limit) * 100.0;
+        warningMessage = "CAUTION: This expense will bring you to " +
+            std::to_string(static_cast<int>(percentUsed)) +
+            "% of your budget for " + category + " in " + monthKey + ".";
+        return true;
+    }
+
+    return false;
+}

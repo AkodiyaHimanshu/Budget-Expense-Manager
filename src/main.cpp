@@ -26,8 +26,8 @@ int main() {
     auto budgetManager = std::make_shared<BudgetManager>();
 
     // Initialize UI components
-    TransactionUI transactionUI(transactionManager);
-    BudgetUI budgetUI(budgetManager, transactionManager);  // Pass both managers to BudgetUI
+    TransactionUI transactionUI(transactionManager, budgetManager);
+    BudgetUI budgetUI(budgetManager, transactionManager);
 
     // Main application loop
     int choice = -1;

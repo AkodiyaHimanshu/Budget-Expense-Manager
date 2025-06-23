@@ -1,8 +1,9 @@
 ﻿#include "../../include/ui/TransactionUI.h"
+#include "../../include/services/BudgetManager.h"
+#include "../../include/ui/BudgetUI.h"
 
-TransactionUI::TransactionUI(std::shared_ptr<TransactionManager> manager) : transactionManager(manager) {
-    // Load existing transactions from storage
-    transactionManager->loadTransactions();
+TransactionUI::TransactionUI(std::shared_ptr<TransactionManager> tm, std::shared_ptr<BudgetManager> bm)
+    : transactionManager(tm), budgetManager(bm) {
 }
 
 void TransactionUI::displayTransactionsMenu() const {
@@ -383,6 +384,20 @@ void TransactionUI::addExpenseTransaction() {
     std::cout << "\n===== Add Expense Transaction =====\n";
 
     auto transaction = createTransaction(TransactionType::EXPENSE);
+
+    // Check if this expense exceeds any budget limits
+        std::string warningMessage;
+        if (transactionManager->checkBudgetExceeded(transaction, budgetManager, warningMessage)) {
+            std::cout << "\n" << warningMessage << "\n";
+            std::cout << "Do you still want to add this expense? (y/n): ";
+            std::string response;
+            std::getline(std::cin, response);
+            if (response != "y" && response != "Y") {
+                std::cout << "Transaction cancelled.\n";
+                return;
+            }
+        }
+
     if (transaction) {
         transactionManager->addTransaction(transaction);
         transactionManager->saveTransactions();

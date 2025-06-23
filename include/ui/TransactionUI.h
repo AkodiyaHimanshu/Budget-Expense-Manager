@@ -15,6 +15,7 @@
 class TransactionUI {
 private:
     std::shared_ptr<TransactionManager> transactionManager;
+    std::shared_ptr<BudgetManager> budgetManager;
 
     // Helper methods for displaying transaction data
     void displayTransactionHeader() const;
@@ -31,7 +32,7 @@ private:
 
 public:
     // Constructor
-    TransactionUI(std::shared_ptr<TransactionManager> manager);
+    TransactionUI(std::shared_ptr<TransactionManager> tm, std::shared_ptr<BudgetManager> bm);
 
     // Menu display methods
     void displayTransactionsMenu() const;

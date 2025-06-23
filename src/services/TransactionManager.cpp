@@ -190,7 +190,11 @@ bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>&
     // Find the budget for this specific month
     std::shared_ptr<Budget> budget = nullptr;
     for (const auto& b : budgets) {
-        if (b->getMonthKey() == monthKey) {
+        // Extract year and month from the monthKey (assuming format "YYYY-MM")
+        std::string yearForComparison = monthKey.substr(0, 4);  // First 4 characters
+        std::string monthForComparison = monthKey.substr(5, 2); // Characters 5-6
+
+        if (budgetYear == yearForComparison && budgetMonth == monthForComparison) {
             budget = b;
             break;
         }

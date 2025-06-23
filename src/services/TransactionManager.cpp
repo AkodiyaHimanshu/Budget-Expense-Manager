@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <numeric>
 #include <iostream>
+#include "../../include/services/BudgetManager.h"
+#include "../../include/models/Budget.h"  // For Budget class definition
 
 TransactionManager::TransactionManager() {
     loadTransactions();
@@ -182,7 +184,18 @@ bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>&
     double amount = transaction->getAmount();
 
     // Get the budget for this category and month
-    auto budget = budgetManager->getBudgetByMonthAndCategory(monthKey, category);
+    // Using the correct method based on our BudgetManager implementation
+    auto budgets = budgetManager->getBudgetsByCategory(category);
+
+    // Find the budget for this specific month
+    std::shared_ptr<Budget> budget = nullptr;
+    for (const auto& b : budgets) {
+        if (b->getMonthKey() == monthKey) {
+            budget = b;
+            break;
+        }
+    }
+
     if (!budget) {
         return false; // No budget set for this category/month
     }
@@ -199,7 +212,8 @@ bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>&
 
     // Add the new transaction amount
     double newTotal = currentSpending + amount;
-    double limit = budget->getAmount();
+    // Use the correct method to get the budget amount (adjust if necessary)
+    double limit = budget->getLimitAmount();
 
     // Check if it exceeds the budget
     if (newTotal > limit) {

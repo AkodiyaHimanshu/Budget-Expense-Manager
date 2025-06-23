@@ -12,7 +12,7 @@ endif()
 project ("Budget-Expense-Manager")
 
 # Add source to this project's executable.
-add_executable (Budget-Expense-Manager "src/main.cpp" "include/main.h" "include/models/Transaction.h" "src/models/Transaction.cpp" "include/services/TransactionManager.h" "src/services/TransactionManager.cpp" "include/ui/TransactionInput.h" "src/ui/TransactionInput.cpp" "include/services/CategoryManager.h" "src/services/CategoryManager.cpp" "include/ui/CategoryManagementUI.h" "src/ui/CategoryManagementUI.cpp" "include/utils/DateUtils.h" "include/utils/FileUtils.h" "include/ui/TransactionUI.h" "src/ui/TransactionUI.cpp")
+add_executable (Budget-Expense-Manager "src/main.cpp" "include/main.h" "include/models/Transaction.h" "src/models/Transaction.cpp" "include/services/TransactionManager.h" "src/services/TransactionManager.cpp" "include/ui/TransactionInput.h" "src/ui/TransactionInput.cpp" "include/services/CategoryManager.h" "src/services/CategoryManager.cpp" "include/ui/CategoryManagementUI.h" "src/ui/CategoryManagementUI.cpp" "include/utils/DateUtils.h" "include/utils/FileUtils.h" "include/ui/TransactionUI.h" "src/ui/TransactionUI.cpp" "include/models/Budget.h" "src/models/Budget.cpp" "include/services/BudgetManager.h" "src/services/BudgetManager.cpp" "include/ui/BudgetUI.h" "src/ui/BudgetUI.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Budget-Expense-Manager PROPERTY CXX_STANDARD 20)

@@ -8,6 +8,8 @@
 #include <tuple>
 #include <ctime>
 #include "../models/Transaction.h"
+#include "../services/BudgetManager.h"
+
 
 class TransactionManager {
 private:
@@ -28,9 +30,7 @@ public:
     std::vector<std::shared_ptr<Transaction>> getTransactionsByDateRange(time_t startDate, time_t endDate) const;
     std::vector<std::shared_ptr<Transaction>> getTransactionsByAmountRange(double minAmount, double maxAmount) const;
 
-    bool checkBudgetExceeded(const std::shared_ptr<Transaction>& transaction,
-        const std::shared_ptr<BudgetManager>& budgetManager,
-        std::string& warningMessage) const;
+    bool checkBudgetExceeded(const std::shared_ptr<Transaction>& transaction, const std::shared_ptr<BudgetManager>& budgetManager, std::string& warningMessage) const;
 
     // Grouping and analysis
     std::map<std::string, std::vector<std::shared_ptr<Transaction>>> getTransactionsByMonth() const;

@@ -171,9 +171,7 @@ double TransactionManager::getNetAmount() const {
     return getTotalIncome() - getTotalExpenses();
 }
 
-bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>& transaction,
-    const std::shared_ptr<BudgetManager>& budgetManager,
-    std::string& warningMessage) const {
+bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>& transaction, const std::shared_ptr<BudgetManager>& budgetManager, std::string& warningMessage) const {
     // Only check for expense transactions
     if (transaction->getType() != TransactionType::EXPENSE) {
         return false;
@@ -194,7 +192,7 @@ bool TransactionManager::checkBudgetExceeded(const std::shared_ptr<Transaction>&
         std::string yearForComparison = monthKey.substr(0, 4);  // First 4 characters
         std::string monthForComparison = monthKey.substr(5, 2); // Characters 5-6
 
-        if (budgetYear == yearForComparison && budgetMonth == monthForComparison) {
+        if (b->getYearMonth().substr(0, 4) == yearForComparison && b->getYearMonth().substr(0, 4) == monthForComparison) {
             budget = b;
             break;
         }

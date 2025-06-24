@@ -15,6 +15,18 @@ static std::string formatDate(const std::chrono::system_clock::time_point& tp) {
     return oss.str();
 }
 
+static bool readInt(int& out, int min, int max, const std::string& prompt) {
+    std::cout << prompt;
+    if (!(std::cin >> out) || out < min || out > max) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Invalid input. Please enter a number between " << min << " and " << max << ".\n";
+        return false;
+    }
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    return true;
+}
+
 UserProfileUI::UserProfileUI(std::shared_ptr<UserProfileManager> profileManager)
     : profileManager(profileManager) {
 }
@@ -41,29 +53,22 @@ void UserProfileUI::createProfile() {
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     if (!profileManager->isValidUsername(username)) {
-        std::cout << "Invalid username format. Username must be 3-20 characters, start with a letter, "
-            << "and contain only alphanumeric characters, hyphens, and underscores.\n";
+        std::cout << "Invalid username format.\n";
         return;
     }
 
     if (profileManager->usernameExists(username)) {
-        std::cout << "A profile with this username already exists. Please choose a different username.\n";
+        std::cout << "A profile with this username already exists.\n";
         return;
     }
 
     std::cout << "Enter display name: ";
     std::getline(std::cin, displayName);
+    if (displayName.empty()) displayName = username;
 
-    if (displayName.empty()) {
-        displayName = username; // Default to username if no display name provided
-    }
-
-    bool success = profileManager->createProfile(username, displayName);
-
-    if (success) {
+    if (profileManager->createProfile(username, displayName)) {
         std::cout << "Profile created successfully!\n";
 
-        // If this is the first profile, set it as active automatically
         if (profileManager->getAllProfiles().size() == 1) {
             profileManager->setActiveProfile(username);
             std::cout << "This profile has been set as the active profile.\n";
@@ -73,7 +78,6 @@ void UserProfileUI::createProfile() {
             char choice;
             std::cin >> choice;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
             if (choice == 'y' || choice == 'Y') {
                 profileManager->setActiveProfile(username);
                 std::cout << "Switched to profile: " << displayName << "\n";
@@ -87,7 +91,6 @@ void UserProfileUI::createProfile() {
 
 void UserProfileUI::selectProfile() {
     auto profiles = profileManager->getAllProfiles();
-
     if (profiles.empty()) {
         std::cout << "No profiles found. Please create a profile first.\n";
         return;
@@ -99,28 +102,18 @@ void UserProfileUI::selectProfile() {
     for (size_t i = 0; i < profiles.size(); ++i) {
         std::cout << i + 1 << ". " << profiles[i]->getDisplayName()
             << " (" << profiles[i]->getUsername() << ")";
-
         if (profileManager->hasActiveProfile() &&
             profileManager->getActiveProfile()->getUsername() == profiles[i]->getUsername()) {
             std::cout << " [ACTIVE]";
         }
-
         std::cout << "\n";
     }
 
-    std::cout << "Enter the number of the profile to select (1-" << profiles.size() << "): ";
     int choice;
-    if (!(std::cin >> choice) || choice < 1 || choice > static_cast<int>(profiles.size())) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Invalid selection.\n";
-        return;
-    }
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    if (!readInt(choice, 1, static_cast<int>(profiles.size()), "Enter the number of the profile to select: ")) return;
 
     auto selectedProfile = profiles[choice - 1];
     profileManager->setActiveProfile(selectedProfile->getUsername());
-
     std::cout << "Switched to profile: " << selectedProfile->getDisplayName() << "\n";
 }
 
@@ -131,7 +124,6 @@ void UserProfileUI::viewProfileInfo() {
     }
 
     auto profile = profileManager->getActiveProfile();
-
     displayProfileHeader("Profile Information");
 
     std::cout << "Username: " << profile->getUsername() << "\n";
@@ -148,12 +140,10 @@ void UserProfileUI::updateProfileDisplayName() {
     }
 
     auto profile = profileManager->getActiveProfile();
-
     displayProfileHeader("Update Profile Display Name");
 
     std::cout << "Current display name: " << profile->getDisplayName() << "\n";
     std::cout << "Enter new display name: ";
-
     std::string newDisplayName;
     std::getline(std::cin, newDisplayName);
 
@@ -162,9 +152,7 @@ void UserProfileUI::updateProfileDisplayName() {
         return;
     }
 
-    bool success = profileManager->updateProfileDisplayName(profile->getUsername(), newDisplayName);
-
-    if (success) {
+    if (profileManager->updateProfileDisplayName(profile->getUsername(), newDisplayName)) {
         std::cout << "Display name updated successfully!\n";
     }
     else {
@@ -174,7 +162,6 @@ void UserProfileUI::updateProfileDisplayName() {
 
 void UserProfileUI::deleteProfile() {
     auto profiles = profileManager->getAllProfiles();
-
     if (profiles.empty()) {
         std::cout << "No profiles found.\n";
         return;
@@ -194,14 +181,7 @@ void UserProfileUI::deleteProfile() {
     }
 
     int choice;
-    std::cout << "Enter the number of the profile to delete (1-" << profiles.size() << "): ";
-    if (!(std::cin >> choice) || choice < 1 || choice > static_cast<int>(profiles.size())) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Invalid selection.\n";
-        return;
-    }
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    if (!readInt(choice, 1, static_cast<int>(profiles.size()), "Enter the number of the profile to delete: ")) return;
 
     auto selectedProfile = profiles[choice - 1];
 
@@ -222,11 +202,8 @@ void UserProfileUI::deleteProfile() {
         return;
     }
 
-    bool success = profileManager->deleteProfile(selectedProfile->getUsername());
-
-    if (success) {
+    if (profileManager->deleteProfile(selectedProfile->getUsername())) {
         std::cout << "Profile deleted successfully!\n";
-
         if (!profileManager->hasActiveProfile()) {
             auto remainingProfiles = profileManager->getAllProfiles();
             if (!remainingProfiles.empty()) {
@@ -240,10 +217,8 @@ void UserProfileUI::deleteProfile() {
     }
 }
 
-
 void UserProfileUI::listAllProfiles() const {
     auto profiles = profileManager->getAllProfiles();
-
     if (profiles.empty()) {
         std::cout << "No profiles found.\n";
         return;
@@ -251,21 +226,16 @@ void UserProfileUI::listAllProfiles() const {
 
     displayProfileHeader("All Profiles");
 
-    // Sort profiles by last access date (most recent first)
     std::sort(profiles.begin(), profiles.end(), [](const auto& a, const auto& b) {
         return a->getLastAccessDate() > b->getLastAccessDate();
         });
 
-    // Calculate column widths
-    size_t usernameWidth = 8; // Minimum width for "Username"
-    size_t displayNameWidth = 12; // Minimum width for "Display Name"
-
+    size_t usernameWidth = 8, displayNameWidth = 12;
     for (const auto& profile : profiles) {
         usernameWidth = std::max(usernameWidth, profile->getUsername().length());
         displayNameWidth = std::max(displayNameWidth, profile->getDisplayName().length());
     }
 
-    // Header
     std::cout << std::setw(4) << std::left << "#"
         << std::setw(usernameWidth + 2) << std::left << "Username"
         << std::setw(displayNameWidth + 2) << std::left << "Display Name"
@@ -275,17 +245,14 @@ void UserProfileUI::listAllProfiles() const {
 
     std::cout << std::string(4 + usernameWidth + 2 + displayNameWidth + 2 + 20 + 20 + 10, '-') << "\n";
 
-    // Print each profile
     for (size_t i = 0; i < profiles.size(); ++i) {
         const auto& profile = profiles[i];
-
         std::cout << std::setw(4) << std::left << (i + 1)
             << std::setw(usernameWidth + 2) << std::left << profile->getUsername()
             << std::setw(displayNameWidth + 2) << std::left << profile->getDisplayName()
             << std::setw(12) << std::left << profile->getCreatedDate().substr(0, 10)
             << std::setw(12) << std::left << profile->getLastAccessDate().substr(0, 10);
 
-        // Active status
         if (profileManager->hasActiveProfile() &&
             profileManager->getActiveProfile()->getUsername() == profile->getUsername()) {
             std::cout << "[ACTIVE]";

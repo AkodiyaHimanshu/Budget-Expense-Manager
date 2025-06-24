@@ -3,6 +3,17 @@
 #include <iomanip>
 #include <limits>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
+#include <sstream>
+
+static std::string formatDate(const std::chrono::system_clock::time_point& tp) {
+    auto t_c = std::chrono::system_clock::to_time_t(tp);
+    std::tm tm = *std::localtime(&t_c);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
+    return oss.str();
+}
 
 UserProfileUI::UserProfileUI(std::shared_ptr<UserProfileManager> profileManager)
     : profileManager(profileManager) {
@@ -255,11 +266,11 @@ void UserProfileUI::listAllProfiles() const {
     std::cout << std::setw(4) << std::left << "#"
         << std::setw(usernameWidth + 2) << std::left << "Username"
         << std::setw(displayNameWidth + 2) << std::left << "Display Name"
-        << std::setw(12) << std::left << "Created On"
-        << std::setw(12) << std::left << "Last Access"
+        << std::setw(20) << std::left << "Created On"
+        << std::setw(20) << std::left << "Last Access"
         << "Status\n";
 
-    std::cout << std::string(4 + usernameWidth + 2 + displayNameWidth + 2 + 12 + 12 + 10, '-') << "\n";
+    std::cout << std::string(4 + usernameWidth + 2 + displayNameWidth + 2 + 20 + 20 + 10, '-') << "\n";
 
     // Print each profile
     for (size_t i = 0; i < profiles.size(); ++i) {
@@ -289,6 +300,5 @@ std::string UserProfileUI::getActiveProfileDisplayLabel() const {
     if (!profileManager->hasActiveProfile()) {
         return "(No Active Profile)";
     }
-
     return "(Active: " + profileManager->getActiveProfile()->getDisplayName() + ")";
 }

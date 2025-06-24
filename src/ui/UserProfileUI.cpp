@@ -6,6 +6,9 @@
 #include <chrono>
 #include <ctime>
 #include <sstream>
+#include <regex>
+
+static const std::regex kUsernamePattern("^[A-Za-z][A-Za-z0-9]{2,19}$");
 
 static std::string formatDate(const std::chrono::system_clock::time_point& tp) {
     auto t_c = std::chrono::system_clock::to_time_t(tp);

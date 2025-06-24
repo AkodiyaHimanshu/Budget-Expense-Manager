@@ -186,17 +186,15 @@ void UserProfileUI::deleteProfile() {
     for (size_t i = 0; i < profiles.size(); ++i) {
         std::cout << i + 1 << ". " << profiles[i]->getDisplayName()
             << " (" << profiles[i]->getUsername() << ")";
-
         if (profileManager->hasActiveProfile() &&
             profileManager->getActiveProfile()->getUsername() == profiles[i]->getUsername()) {
             std::cout << " [ACTIVE]";
         }
-
         std::cout << "\n";
     }
 
-    std::cout << "Enter the number of the profile to delete (1-" << profiles.size() << "): ";
     int choice;
+    std::cout << "Enter the number of the profile to delete (1-" << profiles.size() << "): ";
     if (!(std::cin >> choice) || choice < 1 || choice > static_cast<int>(profiles.size())) {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -211,32 +209,37 @@ void UserProfileUI::deleteProfile() {
         << "' and all its data? This action cannot be undone. (y/n): ";
 
     char confirm;
-    std::cin >> confirm;
+    if (!(std::cin >> confirm)) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Invalid input. Profile deletion cancelled.\n";
+        return;
+    }
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    if (confirm == 'y' || confirm == 'Y') {
-        bool success = profileManager->deleteProfile(selectedProfile->getUsername());
+    if (std::tolower(confirm) != 'y') {
+        std::cout << "Profile deletion cancelled.\n";
+        return;
+    }
 
-        if (success) {
-            std::cout << "Profile deleted successfully!\n";
+    bool success = profileManager->deleteProfile(selectedProfile->getUsername());
 
-            // If we deleted the active profile, try to set another one as active
-            if (!profileManager->hasActiveProfile()) {
-                auto remainingProfiles = profileManager->getAllProfiles();
-                if (!remainingProfiles.empty()) {
-                    profileManager->setActiveProfile(remainingProfiles[0]->getUsername());
-                    std::cout << "Switched to profile: " << remainingProfiles[0]->getDisplayName() << "\n";
-                }
+    if (success) {
+        std::cout << "Profile deleted successfully!\n";
+
+        if (!profileManager->hasActiveProfile()) {
+            auto remainingProfiles = profileManager->getAllProfiles();
+            if (!remainingProfiles.empty()) {
+                profileManager->setActiveProfile(remainingProfiles[0]->getUsername());
+                std::cout << "Switched to profile: " << remainingProfiles[0]->getDisplayName() << "\n";
             }
-        }
-        else {
-            std::cout << "Failed to delete profile.\n";
         }
     }
     else {
-        std::cout << "Profile deletion cancelled.\n";
+        std::cout << "Failed to delete profile.\n";
     }
 }
+
 
 void UserProfileUI::listAllProfiles() const {
     auto profiles = profileManager->getAllProfiles();

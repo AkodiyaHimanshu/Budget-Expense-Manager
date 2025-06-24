@@ -93,8 +93,8 @@ bool CategoryManagementUI::isValidCategoryName(const std::string& name) const {
         return false;
     }
 
-    // Validate characters (allow letters, numbers, spaces, and some special chars)
-    std::regex pattern("^[a-zA-Z0-9 &\\-_\\.\\(\\)]+$");
+    // Compile regex only once at startup
+    static const std::regex pattern("^[a-zA-Z0-9 &\\-_\\.\\(\\)]+$");
     return std::regex_match(name, pattern);
 }
 

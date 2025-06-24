@@ -6,6 +6,8 @@
 #include <regex>
 #include <sstream>
 #include <iomanip>
+#include <chrono>
+
 
 class DateUtils {
 public:
@@ -138,6 +140,23 @@ public:
         return (tm1->tm_year == tm2->tm_year && tm1->tm_mon == tm2->tm_mon);
     }
 
+    static std::string getCurrentDateStr() {
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+
+        std::tm local_tm;
+
+#ifdef _WIN32
+        localtime_s(&local_tm, &time_t_now);
+#else
+        localtime_r(&time_t_now, &local_tm);
+#endif
+
+        std::ostringstream oss;
+        oss << std::put_time(&local_tm, "%Y-%m-%d");
+        return oss.str();
+    }
+
 private:
     /**
      * Normalizes a time_t value to midnight (00:00:00) of the day
@@ -156,6 +175,7 @@ private:
         // Convert back to time_t
         return std::mktime(timeInfo);
     }
+
 };
 
 #endif // DATE_UTILS_H

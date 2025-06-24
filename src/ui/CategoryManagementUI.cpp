@@ -2,6 +2,29 @@
 #include <algorithm>
 #include <cctype>
 #include <regex>
+#include <iomanip>
+#include <limits>
+
+namespace {
+    void clearInputStream() {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
+    bool readIntInRange(int& out, int min, int max, const char* prompt = nullptr) {
+        while (true) {
+            if (prompt) std::cout << prompt;
+
+            if (std::cin >> out && out >= min && out <= max) {
+                clearInputStream();
+                return true;
+            }
+
+            clearInputStream();
+            std::cout << "Invalid input. Please enter a number between " << min << " and " << max << ".\n";
+        }
+    }
+}
 
 CategoryManagementUI::CategoryManagementUI(CategoryManager& manager) : categoryManager(manager) {}
 
@@ -20,18 +43,15 @@ void CategoryManagementUI::displayCategories(const std::vector<std::string>& cat
 
     std::cout << "\n--- " << type << " Categories ---\n\n";
 
-    // Print header
     std::cout << std::left
         << std::setw(5) << "No." << " | "
         << std::setw(nameWidth) << "Category Name" << " | "
         << std::setw(typeWidth) << "Type"
         << std::endl;
 
-    // Print separator
     std::string separator(5 + nameWidth + typeWidth + 6, '-');
     std::cout << separator << std::endl;
 
-    // Print each category
     for (size_t i = 0; i < categories.size(); ++i) {
         std::string categoryType;
         if (categoryManager.isDefaultCategory(categories[i],
@@ -63,38 +83,20 @@ void CategoryManagementUI::showAllCategories() const {
 
 TransactionType CategoryManagementUI::getTransactionTypeChoice() const {
     int choice;
-
-    while (true) {
-        std::cout << "\nSelect transaction type:\n";
-        std::cout << "1. Income\n";
-        std::cout << "2. Expense\n";
-        std::cout << "Choice: ";
-
-        if (std::cin >> choice && (choice == 1 || choice == 2)) {
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            return choice == 1 ? TransactionType::INCOME : TransactionType::EXPENSE;
-        }
-        else {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Invalid choice. Please enter 1 or 2.\n";
-        }
-    }
+    readIntInRange(choice, 1, 2, "\nSelect transaction type:\n1. Income\n2. Expense\nChoice: ");
+    return choice == 1 ? TransactionType::INCOME : TransactionType::EXPENSE;
 }
 
 bool CategoryManagementUI::isValidCategoryName(const std::string& name) const {
-    // Check if empty
     if (name.empty()) {
         return false;
     }
 
-    // Check length (not too short, not too long)
     if (name.length() < 3 || name.length() > 25) {
         return false;
     }
 
-    // Validate characters (allow letters, numbers, spaces, and some special chars)
-    std::regex pattern("^[a-zA-Z0-9 &\\-_\\.\\(\\)]+$");
+    static const std::regex pattern("^[a-zA-Z0-9 &\\-_\\.\\(\\)]+$");
     return std::regex_match(name, pattern);
 }
 
@@ -103,8 +105,6 @@ void CategoryManagementUI::addNewCategory() {
     std::string typeName = (type == TransactionType::INCOME) ? "Income" : "Expense";
     std::string categoryName;
 
-    // The getTransactionTypeChoice() method already has cin.ignore() after reading the choice
-    // So we don't need another cin.ignore() here that might consume legitimate input
     std::cout << "\nEnter new " << typeName << " category name (3-25 chars, letters, numbers, spaces, &-_.()): ";
     std::getline(std::cin, categoryName);
 
@@ -131,7 +131,6 @@ void CategoryManagementUI::removeCustomCategory() {
     TransactionType type = getTransactionTypeChoice();
     std::string typeName = (type == TransactionType::INCOME) ? "Income" : "Expense";
 
-    // Get only custom categories
     std::vector<std::string> customCategories = categoryManager.getCustomCategories(type);
 
     if (customCategories.empty()) {
@@ -139,36 +138,29 @@ void CategoryManagementUI::removeCustomCategory() {
         return;
     }
 
-    // Display custom categories
     std::cout << "\n--- Custom " << typeName << " Categories ---\n\n";
     for (size_t i = 0; i < customCategories.size(); ++i) {
         std::cout << (i + 1) << ". " << customCategories[i] << "\n";
     }
 
-    // Get user selection
     int choice;
-    std::cout << "\nEnter number of category to remove (0 to cancel): ";
-    if (!(std::cin >> choice) || choice < 0 || choice > static_cast<int>(customCategories.size())) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    if (!readIntInRange(choice, 0, static_cast<int>(customCategories.size()),
+        "\nEnter number of category to remove (0 to cancel): ")) {
         std::cout << "Invalid selection.\n";
         return;
     }
 
-    // Cancel if user chose 0
     if (choice == 0) {
         std::cout << "Operation cancelled.\n";
         return;
     }
 
-    // Get the selected category
     std::string selectedCategory = customCategories[choice - 1];
 
-    // Confirm removal
     char confirm;
     std::cout << "Are you sure you want to remove '" << selectedCategory << "'? (y/n): ";
     std::cin >> confirm;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    clearInputStream();
 
     if (confirm == 'y' || confirm == 'Y') {
         if (categoryManager.removeCategory(selectedCategory, type)) {

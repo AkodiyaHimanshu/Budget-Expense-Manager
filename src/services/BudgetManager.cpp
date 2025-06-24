@@ -1,6 +1,7 @@
 #include "../../include/services/BudgetManager.h"
 #include "../../include/utils/FileUtils.h"
 #include "../../include/models/Budget.h"
+#include "../../include/models/Transaction.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -8,6 +9,18 @@
 
 BudgetManager::BudgetManager() {
     // Load existing budgets from file when manager is created
+    loadBudgets();
+}
+
+BudgetManager::BudgetManager(std::shared_ptr<UserProfile> profile)
+    : userProfile(profile) {
+    if (userProfile) {
+        filePath = userProfile->getBudgetsFilePath();
+    }
+    else {
+        // Fallback to default path if no profile
+        filePath = "data/budgets.csv";
+    }
     loadBudgets();
 }
 
@@ -212,4 +225,23 @@ void BudgetManager::loadBudgets() {
     }
 
     file.close();
+}
+
+void BudgetManager::setUserProfile(std::shared_ptr<UserProfile> profile) {
+    // Save current budgets if needed
+    if (!budgets.empty() && userProfile) {
+        saveBudgets();
+    }
+
+    userProfile = profile;
+
+    if (userProfile) {
+        filePath = userProfile->getBudgetsFilePath();
+    }
+    else {
+        filePath = "data/budgets.csv";
+    }
+
+    // Load budgets for the new profile
+    loadBudgets();
 }

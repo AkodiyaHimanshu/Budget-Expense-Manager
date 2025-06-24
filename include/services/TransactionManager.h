@@ -9,12 +9,15 @@
 #include <ctime>
 #include "../models/Transaction.h"
 #include "../services/BudgetManager.h"
+#include "../models/UserProfile.h" // Add this include
 
 
 class TransactionManager {
 private:
     std::vector<std::shared_ptr<Transaction>> transactions;
     const std::string dataFilePath = "data/transactions.csv";
+    std::string filePath; // Will be set based on the user profile
+    std::shared_ptr<UserProfile> userProfile; // Add user profile reference
 
 public:
     TransactionManager();
@@ -44,6 +47,14 @@ public:
     double getTotalIncome() const;
     double getTotalExpenses() const;
     double getNetAmount() const;
+
+
+    // Updated constructor to accept a user profile
+    TransactionManager(std::shared_ptr<UserProfile> profile);
+
+    // Set/change the user profile
+    void setUserProfile(std::shared_ptr<UserProfile> profile);
+
 };
 
 #endif // TRANSACTION_MANAGER_H

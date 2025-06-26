@@ -2,6 +2,8 @@
 #include <memory>
 #include <limits>
 #include <string>
+#include <unordered_map>
+#include <functional>
 
 // Include models
 #include "../include/models/Transaction.h"
@@ -28,71 +30,59 @@ void displayMainMenu() {
     std::cout << "Enter your choice (0-4): ";
 }
 
+void showHelp() {
+    std::cout << "Usage: budget [options]\n";
+    std::cout << "Options:\n";
+    std::cout << "  --help, -h    Show this help message and exit\n";
+    std::cout << "Available Top-Level Commands (enter at application prompt):\n";
+    std::cout << "  1  Transaction Management\n";
+    std::cout << "     1.1  View All Transactions\n";
+    std::cout << "     1.2  View Transactions By Category\n";
+    std::cout << "     1.3  View Transactions By Type (Income/Expense)\n";
+    std::cout << "     1.4  View Transactions By Date Range\n";
+    std::cout << "     1.5  View Transactions By Amount Range\n";
+    std::cout << "     1.6  View Transactions By Month\n";
+    std::cout << "     1.7  View Monthly Summary\n";
+    std::cout << "     1.8  Add New Transaction\n";
+    std::cout << "  2  Budget Management\n";
+    std::cout << "     2.1  View All Budgets\n";
+    std::cout << "     2.2  View Budgets By Category\n";
+    std::cout << "     2.3  View Budgets By Month\n";
+    std::cout << "     2.4  Set New Budget\n";
+    std::cout << "     2.5  Update Budget\n";
+    std::cout << "     2.6  Remove Budget\n";
+    std::cout << "     2.7  View Budget Usage Report\n";
+    std::cout << "  3  Financial Reports\n";
+    std::cout << "     3.1  Monthly Summary\n";
+    std::cout << "     3.2  Budget Utilization Report\n";
+    std::cout << "  4  User Profile Management\n";
+    std::cout << "     4.1  Create Profile\n";
+    std::cout << "     4.2  Select Profile\n";
+    std::cout << "     4.3  View Profile Info\n";
+    std::cout << "     4.4  Update Profile Display Name\n";
+    std::cout << "     4.5  Delete Profile\n";
+    std::cout << "     4.6  List All Profiles\n";
+    std::cout << "  0  Exit\n";
+}
+
 int main(int argc, char* argv[]) {
-    // Handle help flag
+    std::unordered_map<std::string, std::function<void()>> flagHandlers{
+        {"--help", showHelp},
+        {"-h", showHelp}
+        // Add more flags here in future
+    };
+
     if (argc > 1) {
-        std::string arg = argv[1];
-        if (arg == "--help" || arg == "-h") {
-            std::cout << "Usage: budget [options]\n";
-                std::cout << "Options:\n";
-                std::cout << "  --help, -h    Show this help message and exit\n";
-                std::cout << "Available Top-Level Commands (enter at application prompt):\n";
-                std::cout << "  1  Transaction Management\n";
-                std::cout << "     1.1  View All Transactions\n";
-                std::cout << "     1.2  View Transactions By Category\n";
-                std::cout << "     1.3  View Transactions By Type (Income/Expense)\n";
-                std::cout << "     1.4  View Transactions By Date Range\n";
-                std::cout << "     1.5  View Transactions By Amount Range\n";
-                std::cout << "     1.6  View Transactions By Month\n";
-                
-                std::cout << "     1.7  View Monthly Summary\n";
-                
-                std::cout << "     1.8  Add New Transaction\n";
-                
-                std::cout << "  2  Budget Management\n";
-                
-                std::cout << "     2.1  View All Budgets\n";
-                
-                std::cout << "     2.2  View Budgets By Category\n";
-                
-                std::cout << "     2.3  View Budgets By Month\n";
-                
-                std::cout << "     2.4  Set New Budget\n";
-                
-                std::cout << "     2.5  Update Budget\n";
-                
-                std::cout << "     2.6  Remove Budget\n";
-                
-                std::cout << "     2.7  View Budget Usage Report\n";
-                
-                std::cout << "  3  Financial Reports\n";
-                
-                std::cout << "     3.1  Monthly Summary\n";
-               
-                std::cout << "     3.2  Budget Utilization Report\n";
-                
-                std::cout << "  4  User Profile Management\n";
-                
-                std::cout << "     4.1  Create Profile\n";
-                
-                std::cout << "     4.2  Select Profile\n";
-                
-                std::cout << "     4.3  View Profile Info\n";
-                
-                std::cout << "     4.4  Update Profile Display Name\n";
-                
-                std::cout << "     4.5  Delete Profile\n";
-                
-                std::cout << "     4.6  List All Profiles\n";
-                
-                std::cout << "  0  Exit\n";
-                
-                return 0;
+        std::string flag = argv[1];
+        auto it = flagHandlers.find(flag);
+        if (it != flagHandlers.end()) {
+            it->second();
+            return 0;
         }
         else {
-            std::cerr << "Unknown option: " << arg << "\n";
-                std::cerr << "Use --help to see available options.\n";
-                return 1;
+            std::cerr << "Unknown option: " << flag << "\n";
+            std::cerr << "Use --help to see available options.\n";
+            return 1;
         }
     }
 

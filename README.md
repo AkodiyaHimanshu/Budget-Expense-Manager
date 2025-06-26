@@ -22,10 +22,15 @@ A command-line application for managing your personal finances through transacti
 - Monthly spending summaries
 - Budget utilization analytics
 
-### 👤 User Profile Management
+### 👤 User Profile Support
 - Create, select, and manage multiple user profiles
-- Update profile display name
-- Delete or list profiles
+- Store individual data per user
+- View and update profile information
+- Delete or list all available profiles
+
+### 🧭 Command Line Flags
+- `--help`, `-h`: Display usage instructions
+- `--version`, `-v`: Show current version of the application
 
 ---
 

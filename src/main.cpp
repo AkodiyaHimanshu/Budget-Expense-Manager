@@ -1,4 +1,25 @@
-﻿#include <iostream>
+﻿/******************************************************************************
+ * Budget & Expense Manager - CLI Application
+ * Version: 2.3.1
+ *
+ * USAGE GUIDE:
+ * ------------
+ * This is a command-line personal finance manager that helps track your
+ * transactions, manage monthly budgets, and view financial reports.
+ *
+ * HOW TO RUN:
+ * - Interactive Mode:  ./budget
+ * - Show Help:         ./budget --help   or   ./budget -h
+ * - Show Version:      ./budget --version   or   ./budget -v
+ *
+ * FEATURES:
+ * - Multi-user profile support
+ * - Add, filter, and view transactions
+ * - Set, update, and analyze budgets
+ * - Generate reports and summaries
+ *****************************************************************************/
+
+#include <iostream>
 #include <memory>
 #include <limits>
 #include <string>

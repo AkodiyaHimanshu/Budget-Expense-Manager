@@ -21,13 +21,76 @@
 void displayMainMenu() {
     std::cout << "\n===== Budget & Expense Manager =====\n";
     std::cout << "1. Transaction Management\n";
-    std::cout << "2. Budget Management\n";  // New option for budget management
+    std::cout << "2. Budget Management\n";
     std::cout << "3. Financial Reports\n";
+    std::cout << "4. User Profile Management\n";
     std::cout << "0. Exit\n";
-    std::cout << "Enter your choice (0-3): ";
+    std::cout << "Enter your choice (0-4): ";
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    // Handle help flag
+    if (argc > 1) {
+        std::string arg = argv[1];
+        if (arg == "--help" || arg == "-h") {
+            std::cout << "Usage: budget [options]\n";
+                std::cout << "Options:\n";
+                std::cout << "  --help, -h    Show this help message and exit\n";
+                std::cout << "Available Top-Level Commands (enter at application prompt):\n";
+                std::cout << "  1  Transaction Management\n";
+                std::cout << "     1.1  View All Transactions\n";
+                std::cout << "     1.2  View Transactions By Category\n";
+                std::cout << "     1.3  View Transactions By Type (Income/Expense)\n";
+                std::cout << "     1.4  View Transactions By Date Range\n";
+                std::cout << "     1.5  View Transactions By Amount Range\n";
+                std::cout << "     1.6  View Transactions By Month\n";
+                
+                std::cout << "     1.7  View Monthly Summary\n";
+                
+                std::cout << "     1.8  Add New Transaction\n";
+                
+                std::cout << "  2  Budget Management\n";
+                
+                std::cout << "     2.1  View All Budgets\n";
+                
+                std::cout << "     2.2  View Budgets By Category\n";
+                
+                std::cout << "     2.3  View Budgets By Month\n";
+                
+                std::cout << "     2.4  Set New Budget\n";
+                
+                std::cout << "     2.5  Update Budget\n";
+                
+                std::cout << "     2.6  Remove Budget\n";
+                
+                std::cout << "     2.7  View Budget Usage Report\n";
+                
+                std::cout << "  3  Financial Reports\n";
+                
+                std::cout << "     3.1  Monthly Summary\n";
+               
+                std::cout << "     3.2  Budget Utilization Report\n";
+                
+                std::cout << "  4  User Profile Management\n";
+                
+                std::cout << "     4.1  Create Profile\n";
+                
+                std::cout << "     4.2  Select Profile\n";
+                
+                std::cout << "     4.3  View Profile Info\n";
+                
+                std::cout << "     4.4  Update Profile Display Name\n";
+                
+                std::cout << "     4.5  Delete Profile\n";
+                
+                std::cout << "     4.6  List All Profiles\n";
+                
+                std::cout << "  0  Exit\n";
+                
+                return 0;
+        }
+    }
+
     std::cout << "===== Budget & Expense Manager =====\n";
 
     // Create the profile manager
@@ -51,7 +114,6 @@ int main() {
         profileUI->createProfile();
     }
     else {
-        // If we have profiles but none active, prompt to select one
         if (!profileManager->hasActiveProfile()) {
             std::cout << "\nPlease select a user profile to continue:\n";
             profileUI->selectProfile();
@@ -66,22 +128,13 @@ int main() {
         std::cout << "\nWelcome, " << activeProfile->getDisplayName() << "!\n";
     }
     else {
-        // If still no active profile (user declined to create/select), exit
         std::cout << "No active user profile. Exiting.\n";
         return 1;
     }
 
     int choice = -1;
-
     do {
-        std::cout << "\n===== Main Menu =====\n";
-        std::cout << "1. Transaction Management\n";
-        std::cout << "2. Budget Management\n";
-        std::cout << "3. Financial Reports\n";
-        std::cout << "4. User Profile Management\n";  // New menu option
-        std::cout << "0. Exit\n";
-        std::cout << "Enter your choice (0-4): ";
-
+        displayMainMenu();
         if (!(std::cin >> choice)) {
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -90,202 +143,128 @@ int main() {
         }
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        if (choice < 0 || choice > 4) {
-            std::cout << "Invalid choice. Please try again (0-4).\n";
-            continue;
-        }
-
         switch (choice) {
         case 0:
             std::cout << "Thank you for using Budget & Expense Manager. Goodbye!\n";
             break;
-
-        case 1: { // Transaction Management
-            int transactionChoice = -1;
-
+        case 1: {
+            int tChoice = -1;
             do {
-                // Check if we have an active profile
                 if (!profileManager->hasActiveProfile()) {
                     std::cout << "No active user profile. Please select a profile first.\n";
                     profileUI->selectProfile();
-
                     if (profileManager->hasActiveProfile()) {
-                        auto activeProfile = profileManager->getActiveProfile();
-                        transactionManager->setUserProfile(activeProfile);
-                        budgetManager->setUserProfile(activeProfile);
+                        auto ap = profileManager->getActiveProfile();
+                        transactionManager->setUserProfile(ap);
+                        budgetManager->setUserProfile(ap);
                     }
-                    else {
-                        break; // Exit to main menu if no profile selected
-                    }
+                    else break;
                 }
-
                 std::cout << "\n===== Transaction Management ("
                     << profileManager->getActiveProfile()->getDisplayName()
                     << ") =====\n";
-                std::cout << "1. View All Transactions\n";
-                std::cout << "2. View Transactions By Category\n";
-                std::cout << "3. View Transactions By Type (Income/Expense)\n";
-                std::cout << "4. View Transactions By Date Range\n";
-                std::cout << "5. View Transactions By Amount Range\n";
-                std::cout << "6. View Transactions By Month\n";
-                std::cout << "7. View Monthly Summary\n";
-                std::cout << "8. Add New Transaction\n";
-                std::cout << "0. Back to Main Menu\n";
-                std::cout << "Enter your choice (0-8): ";
-
-                if (!(std::cin >> transactionChoice)) {
+                std::cout << "1. View All Transactions\n"
+                    "2. View Transactions By Category\n"
+                    "3. View Transactions By Type (Income/Expense)\n"
+                    "4. View Transactions By Date Range\n"
+                    "5. View Transactions By Amount Range\n"
+                    "6. View Transactions By Month\n"
+                    "7. View Monthly Summary\n"
+                    "8. Add New Transaction\n"
+                    "0. Back to Main Menu\n"
+                    "Enter your choice (0-8): ";
+                if (!(std::cin >> tChoice)) {
                     std::cin.clear();
                     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                     std::cout << "Invalid input. Please enter a number.\n";
                     continue;
                 }
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-                if (transactionChoice < 0 || transactionChoice > 8) {
-                    std::cout << "Invalid choice. Please try again (0-8).\n";
-                    continue;
-                }
-
-                switch (transactionChoice) {
+                switch (tChoice) {
                 case 0:
                     std::cout << "Returning to main menu...\n";
                     break;
-                case 1:
-                    transactionUI->showAllTransactions();
-                    break;
-                case 2:
-                    transactionUI->showTransactionsByCategory();
-                    break;
-                case 3:
-                    transactionUI->showTransactionsByType();
-                    break;
-                case 4:
-                    transactionUI->showTransactionsByDateRange();
-                    break;
-                case 5:
-                    transactionUI->showTransactionsByAmountRange();
-                    break;
-                case 6:
-                    transactionUI->showTransactionsByMonth();
-                    break;
-                case 7:
-                    transactionUI->showMonthlySummary();
-                    break;
-                case 8:
-                    transactionUI->addNewTransaction();
-                    break;
-                default:
-                    std::cout << "Invalid choice. Please try again (0-8).\n";
+                case 1: transactionUI->showAllTransactions(); break;
+                case 2: transactionUI->showTransactionsByCategory(); break;
+                case 3: transactionUI->showTransactionsByType(); break;
+                case 4: transactionUI->showTransactionsByDateRange(); break;
+                case 5: transactionUI->showTransactionsByAmountRange(); break;
+                case 6: transactionUI->showTransactionsByMonth(); break;
+                case 7: transactionUI->showMonthlySummary(); break;
+                case 8: transactionUI->addNewTransaction(); break;
+                default: std::cout << "Invalid choice (0-8).\n";
                 }
-            } while (transactionChoice != 0);
-
+            } while (tChoice != 0);
             break;
         }
-
-        case 2: { // Budget Management
-            int budgetChoice = -1;
-
+        case 2: {
+            int bChoice = -1;
             do {
-                // Check if we have an active profile
                 if (!profileManager->hasActiveProfile()) {
                     std::cout << "No active user profile. Please select a profile first.\n";
                     profileUI->selectProfile();
-
                     if (profileManager->hasActiveProfile()) {
-                        auto activeProfile = profileManager->getActiveProfile();
-                        transactionManager->setUserProfile(activeProfile);
-                        budgetManager->setUserProfile(activeProfile);
+                        auto ap = profileManager->getActiveProfile();
+                        transactionManager->setUserProfile(ap);
+                        budgetManager->setUserProfile(ap);
                     }
-                    else {
-                        break; // Exit to main menu if no profile selected
-                    }
+                    else break;
                 }
-
                 std::cout << "\n===== Budget Management ("
                     << profileManager->getActiveProfile()->getDisplayName()
                     << ") =====\n";
-                std::cout << "1. View All Budgets\n";
-                std::cout << "2. View Budgets By Category\n";
-                std::cout << "3. View Budgets By Month\n";
-                std::cout << "4. Set New Budget\n";
-                std::cout << "5. Update Budget\n";
-                std::cout << "6. Remove Budget\n";
-                std::cout << "7. View Budget Usage Report\n";
-                std::cout << "0. Back to Main Menu\n";
-                std::cout << "Enter your choice (0-7): ";
-
-                if (!(std::cin >> budgetChoice)) {
+                std::cout << "1. View All Budgets\n"
+                    "2. View Budgets By Category\n"
+                    "3. View Budgets By Month\n"
+                    "4. Set New Budget\n"
+                    "5. Update Budget\n"
+                    "6. Remove Budget\n"
+                    "7. View Budget Usage Report\n"
+                    "0. Back to Main Menu\n"
+                    "Enter your choice (0-7): ";
+                if (!(std::cin >> bChoice)) {
                     std::cin.clear();
                     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                     std::cout << "Invalid input. Please enter a number.\n";
                     continue;
                 }
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-                if (budgetChoice < 0 || budgetChoice > 7) {
-                    std::cout << "Invalid choice. Please try again (0-7).\n";
-                    continue;
-                }
-
-                switch (budgetChoice) {
+                switch (bChoice) {
                 case 0:
                     std::cout << "Returning to main menu...\n";
                     break;
-                case 1:
-                    budgetUI->showAllBudgets();
-                    break;
-                case 2:
-                    budgetUI->showBudgetsByCategory();
-                    break;
-                case 3:
-                    budgetUI->showBudgetsByMonth();
-                    break;
-                case 4:
-                    budgetUI->setBudget();
-                    break;
-                case 5:
-                    budgetUI->updateBudget();
-                    break;
-                case 6:
-                    budgetUI->removeBudget();
-                    break;
-                case 7:
-                    budgetUI->showBudgetUsageReport();
-                    break;
-                default:
-                    std::cout << "Invalid choice. Please try again (0-7).\n";
+                case 1: budgetUI->showAllBudgets(); break;
+                case 2: budgetUI->showBudgetsByCategory(); break;
+                case 3: budgetUI->showBudgetsByMonth(); break;
+                case 4: budgetUI->setBudget(); break;
+                case 5: budgetUI->updateBudget(); break;
+                case 6: budgetUI->removeBudget(); break;
+                case 7: budgetUI->showBudgetUsageReport(); break;
+                default: std::cout << "Invalid choice (0-7).\n";
                 }
-            } while (budgetChoice != 0);
-
+            } while (bChoice != 0);
             break;
         }
-
-        case 3: { // Financial Reports
-            // Check if we have an active profile
+        case 3: {
+            int rChoice = -1;
             if (!profileManager->hasActiveProfile()) {
                 std::cout << "No active user profile. Please select a profile first.\n";
                 profileUI->selectProfile();
-
                 if (profileManager->hasActiveProfile()) {
-                    auto activeProfile = profileManager->getActiveProfile();
-                    transactionManager->setUserProfile(activeProfile);
-                    budgetManager->setUserProfile(activeProfile);
+                    auto ap = profileManager->getActiveProfile();
+                    transactionManager->setUserProfile(ap);
+                    budgetManager->setUserProfile(ap);
                 }
-                else {
-                    break; // Exit to main menu if no profile selected
-                }
+                else break;
             }
-
             std::cout << "\n===== Financial Reports ("
                 << profileManager->getActiveProfile()->getDisplayName()
                 << ") =====\n";
-            std::cout << "1. Monthly Summary\n";
-            std::cout << "2. Budget Utilization Report\n";
-            std::cout << "0. Back to Main Menu\n";
-            std::cout << "Enter your choice (0-2): ";
-
-            int reportChoice;
-            if (!(std::cin >> reportChoice)) {
+            std::cout << "1. Monthly Summary\n"
+                "2. Budget Utilization Report\n"
+                "0. Back to Main Menu\n"
+                "Enter your choice (0-2): ";
+            if (!(std::cin >> rChoice)) {
                 std::cin.clear();
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 std::cout << "Invalid input. Please enter a number.\n";
@@ -293,7 +272,7 @@ int main() {
             }
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-            switch (reportChoice) {
+            switch (rChoice) {
             case 0:
                 std::cout << "Returning to main menu...\n";
                 break;

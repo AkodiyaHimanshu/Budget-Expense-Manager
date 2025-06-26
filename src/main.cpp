@@ -67,8 +67,7 @@ void showHelp() {
 
 int main(int argc, char* argv[]) {
     std::unordered_map<std::string, std::function<void()>> flagHandlers{
-        {"--help", showHelp},
-        {"-h", showHelp}
+        {"--help", showHelp}, {"-h", showHelp}
         // Add more flags here in future
     };
 

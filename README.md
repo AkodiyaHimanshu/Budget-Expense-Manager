@@ -70,6 +70,26 @@ make
 
 ---
 
+## 🛠 Project Structure
+
+```
+.
+├── include/
+│   ├── models/              # Data model classes
+│   ├── services/            # Business logic and managers
+│   ├── ui/                  # User interface handlers
+│   └── utils/               # Utility functions (dates, files)
+├── src/                     # Source files
+│   ├── models/              # Data model classes
+│   ├── services/            # Business logic and managers
+│   ├── ui/                  # User interface handlers
+│   └── utils/               # Utility functions (dates, files)
+├── tests/                   # Unit tests
+├── CMakeLists.txt           # Build instructions
+└── CMakePresets.json        # CMake build presets
+```
+
+
 ## ⚙️ Command Line Options
 
 | Option     | Description                        |

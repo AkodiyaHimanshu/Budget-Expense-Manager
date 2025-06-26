@@ -5,6 +5,10 @@
 #include <unordered_map>
 #include <functional>
 
+// App metadata (embedded)
+#define APP_NAME "Budget & Expense Manager"
+#define APP_VERSION "2.3.1"
+
 // Include models
 #include "../include/models/Transaction.h"
 #include "../include/models/Budget.h"
@@ -21,7 +25,7 @@
 #include "../include/ui/UserProfileUI.h"
 
 void displayMainMenu() {
-    std::cout << "\n===== Budget & Expense Manager =====\n";
+    std::cout << "\n===== " << APP_NAME << " =====\n";
     std::cout << "1. Transaction Management\n";
     std::cout << "2. Budget Management\n";
     std::cout << "3. Financial Reports\n";
@@ -34,6 +38,7 @@ void showHelp() {
     std::cout << "Usage: budget [options]\n";
     std::cout << "Options:\n";
     std::cout << "  --help, -h    Show this help message and exit\n";
+    std::cout << "  --version, -v Show version info and exit\n";
     std::cout << "Available Top-Level Commands (enter at application prompt):\n";
     std::cout << "  1  Transaction Management\n";
     std::cout << "     1.1  View All Transactions\n";
@@ -65,10 +70,14 @@ void showHelp() {
     std::cout << "  0  Exit\n";
 }
 
+void showVersion() {
+    std::cout << APP_NAME << " - Version " << APP_VERSION << "\n";
+}
+
 int main(int argc, char* argv[]) {
     std::unordered_map<std::string, std::function<void()>> flagHandlers{
-        {"--help", showHelp}, {"-h", showHelp}
-        // Add more flags here in future
+        {"--help", showHelp}, {"-h", showHelp},
+        {"--version", showVersion}, {"-v", showVersion}
     };
 
     bool handled = false;

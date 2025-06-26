@@ -72,19 +72,22 @@ int main(int argc, char* argv[]) {
         // Add more flags here in future
     };
 
-    if (argc > 1) {
-        std::string flag = argv[1];
-        auto it = flagHandlers.find(flag);
+    bool handled = false;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        auto it = flagHandlers.find(arg);
         if (it != flagHandlers.end()) {
             it->second();
-            return 0;
+            handled = true;
         }
-        else {
-            std::cerr << "Unknown option: " << flag << "\n";
+        else if (arg.rfind("--", 0) == 0 || arg.rfind("-", 0) == 0) {
+            std::cerr << "Unknown option: " << arg << "\n";
             std::cerr << "Use --help to see available options.\n";
             return 1;
         }
     }
+
+    if (handled) return 0;
 
     std::cout << "===== Budget & Expense Manager =====\n";
 

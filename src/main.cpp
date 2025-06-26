@@ -89,6 +89,11 @@ int main(int argc, char* argv[]) {
                 
                 return 0;
         }
+        else {
+            std::cerr << "Unknown option: " << arg << "\n";
+                std::cerr << "Use --help to see available options.\n";
+                return 1;
+        }
     }
 
     std::cout << "===== Budget & Expense Manager =====\n";
